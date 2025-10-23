@@ -12,15 +12,17 @@ A simple Linux executable written in Rust that reads input from stdin (typically
 4. The binary will be located at `target/release/echomind`.
 5. Optionally, move it to a directory in your PATH, e.g., `~/.local/bin/echomind`.
 
-### Arch Linux (AUR)
-
-For Arch Linux users, you can install via AUR:
+### Automatic Install
 
 ```bash
-yay -S echomind
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | sh
 ```
 
-Or manually build the package:
+This will automatically build and install echomind to `/usr/local/bin`.
+
+### Arch Linux (AUR)
+
+Manually build the package:
 
 1. Clone this repo.
 2. Use the provided `PKGBUILD` to build with `makepkg -si`.
