@@ -1,0 +1,14 @@
+pkgbase = echomind
+	pkgdesc = A simple tool to send piped input to a chat API and print the response
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/thepinak503/echomind
+	arch = x86_64
+	license = MIT
+	makedepends = rust
+	makedepends = cargo
+	depends = openssl
+	source = echomind-0.1.0.tar.gz::https://github.com/thepinak503/echomind/archive/v0.1.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = echomind
