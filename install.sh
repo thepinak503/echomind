@@ -4,9 +4,9 @@ set -e
 
 echo "Installing echomind..."
 
-# Check if cargo is installed
-if ! command -v cargo &> /dev/null; then
-    echo "Cargo is not installed. Please install Rust and Cargo first."
+# Check if on Arch Linux or derivative
+if ! command -v pacman &> /dev/null; then
+    echo "This script is designed for Arch Linux. Please use manual installation on other systems."
     exit 1
 fi
 
@@ -14,13 +14,11 @@ fi
 git clone https://github.com/thepinak503/echomind.git /tmp/echomind_install
 cd /tmp/echomind_install
 
-# Build the project
-cargo build --release
-
-# Install the binary
-sudo cp target/release/echomind /usr/local/bin/echomind
+# Build and install with makepkg
+makepkg -si --noconfirm
 
 # Clean up
+cd /
 rm -rf /tmp/echomind_install
 
-echo "echomind installed successfully! Run 'echomind --help' to get started."
+echo "echomind installed successfully!"
