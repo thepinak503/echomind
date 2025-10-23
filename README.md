@@ -47,20 +47,6 @@ some_command | echomind
 
 This tool uses the chat API at `https://ch.at/v1/chat/completions`. It sends a JSON payload with the input as a user message and prints the assistant's response.
 
-## Building for Other Platforms
-
-### Windows
-
-To build for Windows on Linux:
-
-1. Install mingw-w64: `sudo pacman -S mingw-w64-gcc` (Arch) or equivalent.
-2. Run: `cargo build --target x86_64-pc-windows-gnu --release`
-3. The binary will be at `target/x86_64-pc-windows-gnu/release/echomind.exe`
-
-### macOS
-
-Cross-compiling to macOS from Linux requires osxcross. It's complex; consider using CI/CD like GitHub Actions for releases.
-
 ## Dependencies
 
 - reqwest for HTTP requests
