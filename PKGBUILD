@@ -2,7 +2,7 @@
 pkgname=echomind
 pkgver=0.1.1
 pkgrel=1
-pkgdesc="A simple tool to send piped input to a chat API and print the response"
+pkgdesc="A lightweight CLI tool that pipes input to an AI chat API with coder mode and file output"
 arch=('x86_64')
 url="https://github.com/thepinak503/echomind"
 license=('MIT')

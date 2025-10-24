@@ -1,31 +1,48 @@
-.TH ECHOMIND 1 "2025-10-24" "0.1.0" "User Commands"
+.TH ECHOMIND 1 "2025-10-25" "0.1.1" "User Commands"
 .SH NAME
-echomind \- send piped input to chat API and print response
+echomind \- send piped input to AI chat API with coder mode
 .SH SYNOPSIS
 .B echomind
 .RI [ OPTIONS ]
 .SH DESCRIPTION
 .B echomind
 reads input from stdin (typically piped from another command) and sends it as a message to the chat API at https://ch.at/v1/chat/completions. The response from the API is then printed to stdout.
+.PP
+In coder mode, a system prompt is added to instruct the AI to output raw, runnable code without explanations.
 .SH OPTIONS
+.TP
+.BR \-c ", " \-\-coder
+Enable coder mode for generating code.
+.TP
+.BR \-o ", " \-\-output " FILE"
+Save the response to FILE instead of printing to stdout. In coder mode, empty lines are filtered.
 .TP
 .BR \-h ", " \-\-help
 Display help information and exit.
+.TP
+.BR \-V ", " \-\-version
+Display version information and exit.
 .SH EXAMPLES
 .TP
-Pipe a message to echomind:
+Basic usage:
 .RS
 echo "Hello, how are you?" | echomind
 .RE
 .TP
-Use output from another command:
+Generate code and save to file:
 .RS
-some_command | echomind
+echo "write a Python factorial function" | echomind --coder --output factorial.py
+.RE
+.TP
+Combined short options:
+.RS
+cat code.js | echomind -co optimized.js
 .RE
 .SH SEE ALSO
+curl(1), jq(1)
 .SH AUTHOR
-Written by [Your Name].
+Written by Pinak Dhabu.
 .SH REPORTING BUGS
-Report bugs to [your email or issue tracker].
+Report bugs to https://github.com/thepinak503/echomind/issues
 .SH COPYRIGHT
-Copyright \(co 2025 [Your Name]. License: MIT.
+Copyright \(co 2025 Pinak Dhabu. License: MIT.
