@@ -1,6 +1,6 @@
 # Maintainer: Pinak Dhabu <thepinak503@duck.com>
 pkgname=echomind
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="A simple tool to send piped input to a chat API and print the response"
 arch=('x86_64')
