@@ -20,7 +20,8 @@ build() {
 }
 
 package() {
-  install -Dm755 "$(pwd)/target/release/echomind" "$pkgdir/usr/bin/echomind"
+  cd ..
+  install -Dm755 target/release/echomind "$pkgdir/usr/bin/echomind"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 echomind.1 "$pkgdir/usr/share/man/man1/echomind.1"
 }
