@@ -15,6 +15,7 @@ conflicts=('echomind-git')
 
 build() {
   export RUSTFLAGS="--remap-path-prefix=$(pwd)=."
+  cargo clean
   cargo build --release
 }
 
