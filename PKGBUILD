@@ -18,12 +18,12 @@ sha256sums=('bc0840c9a3370bc5b6832f91dd83dc777266c6f1cbd3794a04c6ed36efa1e6df')
 build() {
   cd "$srcdir/$pkgname-$pkgver"
   export RUSTFLAGS="--remap-path-prefix=$(pwd)=."
-  cargo build --release --locked
+  cargo build --release
 }
 
 check() {
   cd "$srcdir/$pkgname-$pkgver"
-  cargo test --locked
+  cargo test
 }
 
 package() {
