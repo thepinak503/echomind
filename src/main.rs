@@ -1,7 +1,8 @@
 use std::fs;
-use std::io::{self, Read};
+use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use clap::Parser;
+use tokio::io::{self, AsyncReadExt};
 
 #[derive(Serialize, Deserialize)]
 struct Message {
@@ -49,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     let mut input = String::new();
-    io::stdin().read_to_string(&mut input)?;
+    io::stdin().read_to_string(&mut input).await?;
 
     let messages = if args.coder {
         vec![
@@ -73,7 +74,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         messages,
     };
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()?;
     let response: Response = client
         .post("https://ch.at/v1/chat/completions")
         .json(&request)
