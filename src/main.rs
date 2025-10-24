@@ -36,23 +36,34 @@ Example usage:
 
   some_command | echomind
 
-  echo 'write a function' | echomind --coder --output code.py")]
+  echo 'write a function' | echomind --coder --output code.py
+
+  echo 'optimize this' | echomind --co optimized.txt")]
 struct Args {
     #[arg(short = 'c', long)]
     coder: bool,
 
     #[arg(short = 'o', long)]
     output: Option<String>,
+
+    #[arg(long)]
+    co: Option<String>,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
+    let (coder, output) = if let Some(co_file) = &args.co {
+        (true, Some(co_file.clone()))
+    } else {
+        (args.coder, args.output.clone())
+    };
+
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).await?;
 
-    let messages = if args.coder {
+    let messages = if coder {
         vec![
             Message {
                 role: "system".to_string(),
@@ -87,8 +98,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(choice) = response.choices.first() {
         let content = choice.message.content.trim();
-        if let Some(outfile) = &args.output {
-            let cleaned = content.lines().filter(|l| !l.trim().is_empty()).collect::<Vec<_>>().join("\n");
+        if let Some(outfile) = &output {
+            let cleaned = content.lines()
+                .filter(|l| !l.trim().is_empty())
+                .collect::<Vec<_>>()
+                .join("\n");
             fs::write(outfile, cleaned)?;
             println!("✅ Code saved to {}", outfile);
         } else {

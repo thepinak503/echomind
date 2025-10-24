@@ -1,6 +1,6 @@
 # Maintainer: Pinak Dhabu <thepinak503@duck.com>
 pkgname=echomind
-pkgver=0.1.1
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="A lightweight CLI tool that pipes input to an AI chat API with coder mode and file output"
 arch=('x86_64')
