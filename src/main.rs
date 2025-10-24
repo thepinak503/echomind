@@ -1,3 +1,4 @@
+use std::fs;
 use std::io::{self, Read};
 use serde::{Deserialize, Serialize};
 use clap::Parser;
@@ -32,21 +33,44 @@ Example usage:
 
   echo 'Hello, how are you?' | echomind
 
-  some_command | echomind")]
-struct Args;
+  some_command | echomind
+
+  echo 'write a function' | echomind --coder --output code.py")]
+struct Args {
+    #[arg(short = 'c', long)]
+    coder: bool,
+
+    #[arg(short = 'o', long)]
+    output: Option<String>,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let _args = Args::parse();
+    let args = Args::parse();
 
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
-    let request = Request {
-        messages: vec![Message {
+    let messages = if args.coder {
+        vec![
+            Message {
+                role: "system".to_string(),
+                content: "You are a code generator. Always and only output raw, runnable code with no explanations, comments, markdown fences, or prose. Do not include code block syntax like triple backticks.".to_string(),
+            },
+            Message {
+                role: "user".to_string(),
+                content: input.trim().to_string(),
+            },
+        ]
+    } else {
+        vec![Message {
             role: "user".to_string(),
             content: input.trim().to_string(),
-        }],
+        }]
+    };
+
+    let request = Request {
+        messages,
     };
 
     let client = reqwest::Client::new();
@@ -59,7 +83,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     if let Some(choice) = response.choices.first() {
-        println!("{}", choice.message.content);
+        let content = choice.message.content.trim();
+        if let Some(outfile) = &args.output {
+            let cleaned = content.lines().filter(|l| !l.trim().is_empty()).collect::<Vec<_>>().join("\n");
+            fs::write(outfile, cleaned)?;
+            println!("✅ Code saved to {}", outfile);
+        } else {
+            println!("{}", content);
+        }
     }
 
     Ok(())

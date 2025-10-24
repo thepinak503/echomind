@@ -56,6 +56,10 @@ This tool uses the chat API at `https://ch.at/v1/chat/completions`. It sends a J
 - tokio for async runtime
 - clap for command-line argument parsing
 
+## Credits
+
+Thanks to the ch.at API for the inspiration behind this tool. This project leverages the power of AI chat completions to make command-line interactions more intelligent and fun. Special shoutout to the open-source community for providing the libraries that make Rust development a breeze.
+
 ## License
 
 [Add your license here, e.g., MIT]
