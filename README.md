@@ -19,32 +19,80 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 
 ## 📦 Installation
 
-### From Source
-
-1. Ensure you have Rust installed.
-2. Clone or download this repository.
-3. Run `cargo build --release` to build the executable.
-4. The binary will be located at `target/release/echomind`.
-5. Optionally, move it to a directory in your PATH, e.g., `~/.local/bin/echomind`.
-
-### Automatic Install
+### Quick Install (Linux/macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
 ```
 
-This will automatically build and install echomind to `/usr/local/bin`.
+### Platform-Specific Installation
 
-### Arch Linux (AUR)
+#### 🐧 Linux
 
-Manually build the package:
+**Arch Linux:**
+```bash
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+makepkg -si
+```
 
-1. Clone this repo.
-2. Use the provided `PKGBUILD` to build with `makepkg -si`.
+**Debian/Ubuntu:**
+```bash
+# Install build dependencies
+sudo apt install -y debhelper cargo rustc libssl-dev pkg-config git
 
-### Pre-built Binaries
+# Build and install .deb package
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+dpkg-buildpackage -us -uc -b
+sudo dpkg -i ../echomind_0.3.0-1_amd64.deb
+```
 
-Download pre-built binaries from the [Releases](https://github.com/thepinak503/echomind/releases) page.
+#### 🍎 macOS
+
+```bash
+# From source (Homebrew formula coming soon)
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+cargo build --release
+sudo install -m 755 target/release/echomind /usr/local/bin/echomind
+```
+
+#### 🪟 Windows
+
+**Quick Install (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex
+```
+
+**Using Cargo:**
+```powershell
+cargo install --git https://github.com/thepinak503/echomind
+```
+
+**Pre-built binaries:** Download from [Releases](https://github.com/thepinak503/echomind/releases) (coming soon)
+
+**WSL:** Use the Linux installation instructions
+
+### 📦 Pre-built Binaries
+
+Pre-built binaries for Linux (x64, musl), macOS (Intel, Apple Silicon), and Windows will be available from the [Releases](https://github.com/thepinak503/echomind/releases) page.
+
+### 🔧 From Source
+
+```bash
+# Install Rust if needed
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Clone and build
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+cargo build --release
+
+# Binary will be at: target/release/echomind
+```
+
+**📖 For detailed installation instructions for all platforms, see [INSTALL.md](INSTALL.md)**
 
 ## 🚀 Usage
 

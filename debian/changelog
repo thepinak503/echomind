@@ -1,0 +1,29 @@
+echomind (0.3.0-1) unstable; urgency=medium
+
+  * Major release with comprehensive enhancements
+  * Added multiple API provider support (chat, chatanywhere, openai, claude, ollama)
+  * Added interactive REPL mode for multi-turn conversations
+  * Added streaming responses with real-time display
+  * Added configuration system with TOML support
+  * Added progress indicators and colored output
+  * Modular architecture with custom error types
+  * Comprehensive test suite
+  * CI/CD pipeline with GitHub Actions
+  * Enhanced documentation
+
+ -- thepinak503 <thepinak503@gmail.com>  Wed, 28 Oct 2025 00:00:00 +0530
+
+echomind (0.2.0-1) unstable; urgency=low
+
+  * Added coder mode
+  * Added file output support
+  * Combined --co flag
+
+ -- thepinak503 <thepinak503@gmail.com>  Mon, 01 Jan 2025 00:00:00 +0530
+
+echomind (0.1.0-1) unstable; urgency=low
+
+  * Initial release
+
+ -- thepinak503 <thepinak503@gmail.com>  Sun, 01 Dec 2024 00:00:00 +0530
+

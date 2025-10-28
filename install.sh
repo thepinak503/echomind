@@ -2,36 +2,137 @@
 
 set -e
 
-echo "Installing echomind..."
+# Color output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Clone the repository
-git clone https://github.com/thepinak503/echomind.git /tmp/echomind_install
-cd /tmp/echomind_install/src/echomind-0.1.0
+echo -e "${BLUE}=== Echomind Installer ===${NC}"
+echo ""
 
-# Install Rust if not present
+# Detect OS
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+echo -e "${BLUE}Detected OS:${NC} $OS"
+echo -e "${BLUE}Architecture:${NC} $ARCH"
+echo ""
+
+# Check if Rust is installed
 if ! command -v cargo &> /dev/null; then
-    echo "Installing Rust..."
+    echo -e "${YELLOW}Rust is not installed. Installing...${NC}"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    source ~/.cargo/env
+    source "$HOME/.cargo/env"
+    echo -e "${GREEN}✓ Rust installed${NC}"
 fi
 
-# Build the project
+# Clone repository
+TEMP_DIR="/tmp/echomind_install_$$"
+echo -e "${BLUE}Cloning repository...${NC}"
+git clone https://github.com/thepinak503/echomind.git "$TEMP_DIR"
+cd "$TEMP_DIR"
+
+# Build
+echo -e "${BLUE}Building echomind...${NC}"
 cargo build --release
 
-# Install the binary
-sudo cp target/release/echomind /usr/local/bin/
+# Install based on OS
+case "$OS" in
+    Linux*)
+        echo -e "${BLUE}Installing for Linux...${NC}"
 
-# Install man page
-sudo mkdir -p /usr/local/share/man/man1
-sudo cp echomind.1 /usr/local/share/man/man1/
-sudo gzip /usr/local/share/man/man1/echomind.1
+        # Detect package manager
+        if command -v pacman &> /dev/null; then
+            echo -e "${YELLOW}Arch Linux detected. You can use 'makepkg -si' instead.${NC}"
+        elif command -v apt &> /dev/null; then
+            echo -e "${YELLOW}Debian/Ubuntu detected. Building .deb package...${NC}"
+            # Install build dependencies if needed
+            sudo apt-get update
+            sudo apt-get install -y debhelper cargo rustc libssl-dev pkg-config
 
-# Install documentation
-sudo mkdir -p /usr/local/share/doc/echomind
-sudo cp README.md /usr/local/share/doc/echomind/
+            # Build .deb package
+            dpkg-buildpackage -us -uc -b
+
+            # Install the package
+            sudo dpkg -i ../echomind_0.3.0-1_*.deb || sudo apt-get install -f -y
+
+            echo -e "${GREEN}✓ Installed via .deb package${NC}"
+            cd /
+            rm -rf "$TEMP_DIR"
+            echo -e "${GREEN}✓ echomind installed successfully!${NC}"
+            exit 0
+        fi
+
+        # Fallback to manual installation
+        echo -e "${YELLOW}Manual installation...${NC}"
+        sudo install -Dm755 target/release/echomind /usr/local/bin/echomind
+        sudo install -Dm644 README.md /usr/local/share/doc/echomind/README.md
+        sudo install -Dm644 CONTRIBUTING.md /usr/local/share/doc/echomind/CONTRIBUTING.md
+        sudo install -Dm644 config.example.toml /usr/local/share/doc/echomind/config.example.toml
+        sudo install -Dm644 echomind.1 /usr/local/share/man/man1/echomind.1
+        sudo gzip -f /usr/local/share/man/man1/echomind.1
+
+        echo -e "${GREEN}✓ Binary installed to /usr/local/bin/echomind${NC}"
+        ;;
+
+    Darwin*)
+        echo -e "${BLUE}Installing for macOS...${NC}"
+
+        # Check for Homebrew
+        if command -v brew &> /dev/null; then
+            echo -e "${YELLOW}You can also use Homebrew in the future!${NC}"
+        fi
+
+        # Install to /usr/local/bin
+        sudo install -m 755 target/release/echomind /usr/local/bin/echomind
+        sudo mkdir -p /usr/local/share/doc/echomind
+        sudo install -m 644 README.md /usr/local/share/doc/echomind/README.md
+        sudo install -m 644 CONTRIBUTING.md /usr/local/share/doc/echomind/CONTRIBUTING.md
+        sudo install -m 644 config.example.toml /usr/local/share/doc/echomind/config.example.toml
+        sudo mkdir -p /usr/local/share/man/man1
+        sudo install -m 644 echomind.1 /usr/local/share/man/man1/echomind.1
+        sudo gzip -f /usr/local/share/man/man1/echomind.1
+
+        echo -e "${GREEN}✓ Binary installed to /usr/local/bin/echomind${NC}"
+        ;;
+
+    MINGW*|MSYS*|CYGWIN*)
+        echo -e "${BLUE}Installing for Windows...${NC}"
+
+        # Windows installation
+        INSTALL_DIR="$HOME/.local/bin"
+        mkdir -p "$INSTALL_DIR"
+        cp target/release/echomind.exe "$INSTALL_DIR/" 2>/dev/null || cp target/release/echomind "$INSTALL_DIR/echomind.exe"
+
+        echo -e "${GREEN}✓ Binary installed to $INSTALL_DIR/echomind.exe${NC}"
+        echo -e "${YELLOW}Note: Make sure $INSTALL_DIR is in your PATH${NC}"
+        echo -e "${YELLOW}Add this to your PATH: export PATH=\"\$HOME/.local/bin:\$PATH\"${NC}"
+        ;;
+
+    *)
+        echo -e "${RED}Unsupported operating system: $OS${NC}"
+        exit 1
+        ;;
+esac
 
 # Clean up
 cd /
-rm -rf /tmp/echomind_install
+rm -rf "$TEMP_DIR"
 
-echo "echomind installed successfully!"
+echo ""
+echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║  ✓ echomind installed successfully!    ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${BLUE}Quick Start:${NC}"
+echo -e "  ${YELLOW}1.${NC} Initialize config:  ${GREEN}echomind --init-config${NC}"
+echo -e "  ${YELLOW}2.${NC} Try it out:        ${GREEN}echo 'Hello AI!' | echomind${NC}"
+echo -e "  ${YELLOW}3.${NC} Interactive mode:  ${GREEN}echomind --interactive${NC}"
+echo -e "  ${YELLOW}4.${NC} View help:         ${GREEN}echomind --help${NC}"
+echo -e "  ${YELLOW}5.${NC} Man page:          ${GREEN}man echomind${NC}"
+echo ""
+echo -e "${BLUE}For more information:${NC}"
+echo -e "  ${GREEN}https://github.com/thepinak503/echomind${NC}"
+echo ""

@@ -1,0 +1,25 @@
+Source: echomind
+Section: utils
+Priority: optional
+Maintainer: thepinak503 <thepinak503@gmail.com>
+Build-Depends: debhelper (>= 11), cargo, rustc (>= 1.70), libssl-dev, pkg-config
+Standards-Version: 4.5.0
+Homepage: https://github.com/thepinak503/echomind
+Vcs-Git: https://github.com/thepinak503/echomind.git
+Vcs-Browser: https://github.com/thepinak503/echomind
+
+Package: echomind
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl3 | libssl1.1
+Suggests: jq
+Description: AI-powered CLI tool with multiple provider support
+ echomind is a lightweight, fast command-line tool written in Rust that
+ pipes input to AI chat APIs and outputs responses.
+ .
+ Features:
+  - Multiple API provider support (chat, chatanywhere, openai, claude, ollama)
+  - Interactive REPL mode for multi-turn conversations
+  - Streaming responses with real-time display
+  - Configuration system with TOML support
+  - Progress indicators and colored output
+  - Coder mode for clean code generation
