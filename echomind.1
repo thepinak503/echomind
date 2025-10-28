@@ -1,0 +1,240 @@
+.TH ECHOMIND 1 "2025-10-28" "0.3.0" "User Commands"
+.SH NAME
+echomind \- AI-powered command-line chat tool with multiple provider support
+.SH SYNOPSIS
+.B echomind
+.RI [ OPTIONS ]
+.br
+.B echomind
+.B \-\-interactive
+.RI [ OPTIONS ]
+.br
+.B echomind
+.B \-\-init\-config
+.SH DESCRIPTION
+.B echomind
+is a lightweight, fast command-line tool that pipes input to AI chat APIs and outputs responses. It supports multiple AI providers, streaming responses, interactive mode, and extensive configuration options.
+
+When invoked without arguments, echomind displays usage information. To process input, pipe text to echomind from stdin.
+.SH OPTIONS
+.SS "General Options"
+.TP
+.BR \-h ", " \-\-help
+Display help information and exit.
+.TP
+.BR \-V ", " \-\-version
+Display version information and exit.
+.TP
+.BR \-v ", " \-\-verbose
+Enable verbose output for debugging.
+.SS "Mode Options"
+.TP
+.BR \-i ", " \-\-interactive
+Start interactive REPL mode for multi-turn conversations.
+.TP
+.BR \-c ", " \-\-coder
+Enable coder mode. Generates clean, runnable code without explanations or markdown fences.
+.TP
+.BR \-\-stream
+Stream response as it arrives (like ChatGPT typing effect).
+.SS "Output Options"
+.TP
+.BR \-o ", " \-\-output " " \fIFILE\fR
+Save response to FILE instead of printing to stdout. In coder mode, empty lines are filtered.
+.TP
+.BR \-\-co " " \fIFILE\fR
+Combined shorthand for --coder --output FILE.
+.SS "API Provider Options"
+.TP
+.BR \-p ", " \-\-provider " " \fINAME\fR
+API provider to use. Options: chat, chatanywhere, openai, claude, ollama, or a custom URL.
+Default: chat (https://ch.at).
+.TP
+.BR \-m ", " \-\-model " " \fIMODEL\fR
+Model to use (e.g., gpt-3.5-turbo, gpt-4, claude-3-opus). Default: gpt-3.5-turbo.
+.TP
+.BR \-\-api\-key " " \fIKEY\fR
+API key for providers that require authentication. Can also be set via ECHOMIND_API_KEY environment variable.
+.TP
+.BR \-\-timeout " " \fISECONDS\fR
+Request timeout in seconds. Default: 30.
+.SS "AI Parameters"
+.TP
+.BR \-t ", " \-\-temperature " " \fINUM\fR
+Control response randomness (0.0-2.0). Lower values are more deterministic, higher values more creative. Default: 0.7.
+.TP
+.BR \-\-max\-tokens " " \fINUM\fR
+Maximum tokens in response. Limits response length.
+.TP
+.BR \-s ", " \-\-system " " \fIPROMPT\fR
+Custom system prompt to control AI behavior.
+.SS "Configuration Options"
+.TP
+.BR \-\-init\-config
+Initialize default configuration file at ~/.config/echomind/config.toml.
+.TP
+.BR \-\-show\-config
+Display configuration file location and contents.
+.SH CONFIGURATION
+.B echomind
+can be configured via ~/.config/echomind/config.toml. Use
+.B echomind --init-config
+to create a default configuration file.
+
+Configuration options include:
+.IP \(bu 2
+Default API provider and endpoint
+.IP \(bu 2
+API keys
+.IP \(bu 2
+Default model selection
+.IP \(bu 2
+AI parameters (temperature, max_tokens)
+.IP \(bu 2
+Default modes (coder, stream)
+.IP \(bu 2
+Request timeout
+
+Command-line options override configuration file settings.
+.SH ENVIRONMENT
+.TP
+.B ECHOMIND_API_KEY
+API key for authentication. Overrides config file setting but can be overridden by --api-key option.
+.SH SUPPORTED PROVIDERS
+.TP
+.B chat
+Free API at https://ch.at (no API key required)
+.TP
+.B chatanywhere
+ChatAnywhere API at https://api.chatanywhere.tech (requires API key)
+.TP
+.B openai
+OpenAI API (requires API key)
+.TP
+.B claude
+Anthropic Claude API (requires API key)
+.TP
+.B ollama
+Local Ollama instance at http://localhost:11434 (no API key required)
+.TP
+.B custom
+Custom API endpoint (specify full URL)
+.SH EXAMPLES
+.SS "Basic Usage"
+.TP
+Pipe a message to echomind:
+.RS
+echo "Hello, how are you?" | echomind
+.RE
+.TP
+Process file contents:
+.RS
+cat file.txt | echomind
+.RE
+.TP
+Process command output:
+.RS
+git diff | echomind "Summarize these changes"
+.RE
+.SS "Coder Mode"
+.TP
+Generate code and save to file:
+.RS
+echo "write a Python factorial function" | echomind --coder --output factorial.py
+.RE
+.TP
+Using shorthand:
+.RS
+echo "create REST API" | echomind -co api.py
+.RE
+.SS "Interactive Mode"
+.TP
+Start interactive conversation:
+.RS
+echomind --interactive
+.RE
+.TP
+Interactive with streaming:
+.RS
+echomind -i --stream
+.RE
+.SS "Multiple Providers"
+.TP
+Use OpenAI with GPT-4:
+.RS
+echo "Explain quantum computing" | echomind --provider openai --model gpt-4
+.RE
+.TP
+Use ChatAnywhere:
+.RS
+echo "Hello" | echomind --provider chatanywhere --api-key YOUR_KEY
+.RE
+.TP
+Use local Ollama:
+.RS
+echo "Help me" | echomind --provider ollama --model llama2
+.RE
+.SS "Advanced Parameters"
+.TP
+Control creativity with temperature:
+.RS
+echo "Tell me a story" | echomind --temperature 1.5
+.RE
+.TP
+Limit response length:
+.RS
+echo "Explain AI" | echomind --max-tokens 100
+.RE
+.TP
+Custom system prompt:
+.RS
+echo "Hello" | echomind --system "You are a pirate. Respond in pirate speak."
+.RE
+.SS "Streaming"
+.TP
+Stream long response:
+.RS
+echo "Write an essay about climate change" | echomind --stream
+.RE
+.SH INTERACTIVE MODE
+In interactive mode, the following commands are available:
+.TP
+.B exit, quit, Ctrl+D
+Exit interactive mode
+.TP
+.B clear
+Clear conversation history
+.PP
+Simply type your message and press Enter to chat with the AI. Conversation context is maintained across turns.
+.SH FILES
+.TP
+.I ~/.config/echomind/config.toml
+User configuration file
+.SH EXIT STATUS
+.TP
+.B 0
+Success
+.TP
+.B 1
+Error occurred (network, API, configuration, etc.)
+.SH TROUBLESHOOTING
+.TP
+.B "API key required" errors
+Set API key via --api-key option, ECHOMIND_API_KEY environment variable, or config file.
+.TP
+.B Timeout errors
+Increase timeout with --timeout option or in config file.
+.TP
+.B Network errors
+Check internet connectivity, firewall settings, and API endpoint status. Use --verbose for debugging.
+.SH AUTHOR
+Written by Pinak Dhabu <thepinak503@duck.com>.
+.SH REPORTING BUGS
+Report bugs at: https://github.com/thepinak503/echomind/issues
+.SH COPYRIGHT
+Copyright \(co 2025 Pinak Dhabu. License: MIT.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH SEE ALSO
+Full documentation at: https://github.com/thepinak503/echomind

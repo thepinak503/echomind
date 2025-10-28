@@ -1,0 +1,34 @@
+# Echomind Configuration Example
+# Copy this to ~/.config/echomind/config.toml and customize
+
+[api]
+# Default API provider to use
+# Options: "chat", "chatanywhere", "openai", "claude", "ollama", or a custom URL
+provider = "chat"
+
+# API key for providers that require authentication
+# Can also be set via ECHOMIND_API_KEY environment variable
+# api_key = "your-api-key-here"
+
+# Custom API endpoint (optional)
+# Overrides the default endpoint for the selected provider
+# endpoint = "https://custom-api.example.com/v1/chat/completions"
+
+# Default model to use
+model = "gpt-3.5-turbo"
+
+# Request timeout in seconds
+timeout = 30
+
+[defaults]
+# Default temperature for responses (0.0 = deterministic, 2.0 = very random)
+temperature = 0.7
+
+# Default maximum tokens in response (optional)
+# max_tokens = 2000
+
+# Enable coder mode by default
+coder_mode = false
+
+# Enable streaming by default
+stream = false
