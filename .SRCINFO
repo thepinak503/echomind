@@ -1,6 +1,6 @@
 pkgbase = echomind
-	pkgdesc = A lightweight CLI tool that pipes input to an AI chat API with coder mode and file output
-	pkgver = 0.2.0
+	pkgdesc = AI-powered CLI tool with multiple provider support, streaming, and interactive mode
+	pkgver = 0.3.0
 	pkgrel = 1
 	url = https://github.com/thepinak503/echomind
 	arch = x86_64
@@ -8,8 +8,8 @@ pkgbase = echomind
 	makedepends = rust
 	makedepends = cargo
 	depends = openssl
+	depends = gcc-libs
 	optdepends = jq: for JSON output formatting
-	optdepends = curl: for custom API integration
 	provides = echomind
 	conflicts = echomind-git
 
