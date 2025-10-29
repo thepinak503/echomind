@@ -47,7 +47,7 @@ case "$OS" in
         if command -v pacman &> /dev/null; then
             echo -e "${YELLOW}Arch Linux detected. You can use 'makepkg -si' instead.${NC}"
             echo -e "${YELLOW}Installing manually...${NC}"
-            
+
         elif command -v apt &> /dev/null; then
             echo -e "${YELLOW}Debian/Ubuntu detected. Building .deb package...${NC}"
             # Install build dependencies if needed
@@ -65,27 +65,27 @@ case "$OS" in
             rm -rf "$TEMP_DIR"
             echo -e "${GREEN}✓ echomind installed successfully!${NC}"
             exit 0
-            
+
         elif command -v dnf &> /dev/null; then
             echo -e "${YELLOW}Fedora/RHEL detected. Installing dependencies...${NC}"
             sudo dnf install -y cargo rust openssl-devel pkg-config
             echo -e "${YELLOW}Installing manually...${NC}"
-            
+
         elif command -v yum &> /dev/null; then
             echo -e "${YELLOW}CentOS/RHEL detected. Installing dependencies...${NC}"
             sudo yum install -y cargo rust openssl-devel pkgconfig
             echo -e "${YELLOW}Installing manually...${NC}"
-            
+
         elif command -v zypper &> /dev/null; then
             echo -e "${YELLOW}openSUSE detected. Installing dependencies...${NC}"
             sudo zypper install -y cargo rust libopenssl-devel pkg-config
             echo -e "${YELLOW}Installing manually...${NC}"
-            
+
         elif command -v apk &> /dev/null; then
             echo -e "${YELLOW}Alpine Linux detected. Installing dependencies...${NC}"
             sudo apk add --no-cache cargo rust openssl-dev pkgconfig
             echo -e "${YELLOW}Installing manually...${NC}"
-            
+
         else
             echo -e "${YELLOW}Unknown distribution. Installing manually...${NC}"
         fi
@@ -122,21 +122,10 @@ case "$OS" in
         echo -e "${GREEN}✓ Binary installed to /usr/local/bin/echomind${NC}"
         ;;
 
-    MINGW*|MSYS*|CYGWIN*)
-        echo -e "${BLUE}Installing for Windows...${NC}"
-
-        # Windows installation
-        INSTALL_DIR="$HOME/.local/bin"
-        mkdir -p "$INSTALL_DIR"
-        cp target/release/echomind.exe "$INSTALL_DIR/" 2>/dev/null || cp target/release/echomind "$INSTALL_DIR/echomind.exe"
-
-        echo -e "${GREEN}✓ Binary installed to $INSTALL_DIR/echomind.exe${NC}"
-        echo -e "${YELLOW}Note: Make sure $INSTALL_DIR is in your PATH${NC}"
-        echo -e "${YELLOW}Add this to your PATH: export PATH=\"\$HOME/.local/bin:\$PATH\"${NC}"
-        ;;
-
     *)
         echo -e "${RED}Unsupported operating system: $OS${NC}"
+        echo -e "${YELLOW}This script supports Linux and macOS only.${NC}"
+        echo -e "${YELLOW}For Windows, use: irm -useb https://is.gd/echomindwin | iex${NC}"
         exit 1
         ;;
 esac
