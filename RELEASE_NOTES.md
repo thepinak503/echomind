@@ -320,7 +320,7 @@ echo "Question?" | echomind --provider https://my-api.com/v1/chat
 
 | Provider | Endpoint | API Key Required | Models |
 |----------|----------|------------------|--------|
-| **chat** | ch.at | ❌ No | gpt-3.5-turbo |
+| **chat** | ch.at | ❌ No | any |
 | **chatanywhere** | api.chatanywhere.tech | ✅ Yes | gpt-3.5-turbo, gpt-4 |
 | **openai** | api.openai.com | ✅ Yes | gpt-3.5-turbo, gpt-4, gpt-4-turbo |
 | **claude** | api.anthropic.com | ✅ Yes | claude-3-opus, claude-3-sonnet |
@@ -371,20 +371,6 @@ Thanks to:
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## 🚀 What's Next?
-
-Planned for future releases:
-- [ ] Pre-built binaries for all platforms
-- [ ] Homebrew formula for macOS
-- [ ] AUR package for Arch Linux
-- [ ] Conversation history persistence
-- [ ] Plugin system
-- [ ] Output formatting options (JSON, Markdown)
-- [ ] Clipboard integration
-- [ ] Multi-model comparison mode
 
 ---
 
