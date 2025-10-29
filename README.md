@@ -68,6 +68,11 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 
 **Arch Linux / Manjaro:**
 ```bash
+yay -S echomind
+```
+
+OR
+```bash
 git clone https://github.com/thepinak503/echomind.git
 cd echomind
 makepkg -si
