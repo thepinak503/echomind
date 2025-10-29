@@ -45,7 +45,12 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 ### Quick Install (Linux/macOS)
 
 ```bash
-bash <(curl -fsSL https://is.gd/echomind)
+bash <(curl -fsSL https://is.gd/echomindlin)
+```
+
+**Alternative (full URL):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
 ```
 
 ### Platform-Specific Installation
