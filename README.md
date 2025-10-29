@@ -45,7 +45,7 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 ### Quick Install (Linux/macOS)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
+bash <(curl -fsSL https://is.gd/echomind)
 ```
 
 ### Platform-Specific Installation
@@ -153,7 +153,7 @@ sudo install -m 755 target/release/echomind /usr/local/bin/echomind
 
 **Quick Install (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex
+irm -useb https://is.gd/echomindwin | iex
 ```
 
 **Using Cargo:**
@@ -549,6 +549,210 @@ For connection errors, check:
 - Firewall settings
 - API endpoint status
 - Use `--verbose` for debugging
+
+# Contributing to Echomind
+
+Thank you for your interest in contributing to Echomind! We welcome contributions from the community and are excited to see what you'll help build. This guide will walk you through the process of forking the repository and submitting a pull request.
+
+## Quick Start
+
+1. **Fork** the repository on GitHub
+2. **Clone** your fork locally
+3. **Create** a feature branch
+4. **Make** your changes
+5. **Test** your changes
+6. **Commit** and **push** to your fork
+7. **Open** a Pull Request
+
+## Detailed Instructions
+
+### 1. Fork the Repository
+
+- Visit https://github.com/thepinak503/echomind
+- Click the **"Fork"** button in the top-right corner
+- This creates your own copy of the repository under your GitHub account
+
+### 2. Clone Your Fork
+
+```bash
+# Clone your fork to your local machine
+git clone https://github.com/YOUR_USERNAME/echomind.git
+cd echomind
+
+# Add the original repository as upstream
+git remote add upstream https://github.com/thepinak503/echomind.git
+```
+
+### 3. Set Up Development Environment
+
+Make sure you have Rust installed (see [INSTALL.md](INSTALL.md) for detailed setup):
+
+```bash
+# Verify Rust installation
+rustc --version
+cargo --version
+
+# Build the project
+cargo build
+
+# Run tests to ensure everything works
+cargo test
+```
+
+### 4. Create a Feature Branch
+
+```bash
+# Sync with upstream main branch
+git fetch upstream
+git checkout main
+git merge upstream/main
+
+# Create a new branch for your feature
+git checkout -b feature/your-feature-name
+```
+
+**Branch naming conventions:**
+- `feature/description` for new features
+- `fix/description` for bug fixes
+- `docs/description` for documentation
+- `refactor/description` for code refactoring
+
+### 5. Make Your Changes
+
+- Write clean, well-documented code
+- Follow Rust conventions and style
+- Add tests for new functionality
+- Update documentation as needed
+
+**Testing your changes:**
+```bash
+# Run all tests
+cargo test
+
+# Run specific integration tests
+cargo test --test integration
+
+# Test the CLI directly
+cargo run -- --help
+```
+
+### 6. Commit Your Changes
+
+```bash
+# Stage your changes
+git add .
+
+# Commit with a descriptive message
+git commit -m "feat: add new provider support for XYZ
+
+- Implement XYZ API provider
+- Add corresponding model configurations
+- Update documentation with examples
+- Add unit tests for new provider
+
+Fixes #123"  # Reference issue numbers if applicable
+```
+
+**Commit message guidelines:**
+- Use the conventional commits format: `type(scope): description`
+- Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- Keep the first line under 50 characters
+- Provide detailed description in the body
+
+### 7. Push to Your Fork
+
+```bash
+git push origin feature/your-feature-name
+```
+
+### 8. Create a Pull Request
+
+1. Visit your fork on GitHub: `https://github.com/YOUR_USERNAME/echomind`
+2. Click **"Compare & pull request"** next to your branch
+3. Fill out the PR template:
+   - **Title**: Clear, descriptive title
+   - **Description**: Detailed explanation of changes
+   - **Related Issues**: Link to any relevant issues
+   - **Checklist**: Verify all items are completed
+
+## PR Template
+
+When creating your pull request, please use this format:
+
+```markdown
+## Description
+<!-- Clearly describe what this PR does and why it's needed -->
+
+## Related Issue
+<!-- Link to the issue this PR addresses -->
+Fixes #issue_number
+
+## Type of Change
+- [ ] 🐛 Bug fix
+- [ ] ✨ New feature
+- [ ] 📚 Documentation update
+- [ ] 🎨 UI/UX improvement
+- [ ] ⚡ Performance improvement
+- [ ] 🔧 Refactor
+- [ ] ✅ Test addition
+
+## Testing
+<!-- Describe how you tested your changes -->
+- [ ] All existing tests pass
+- [ ] New tests added
+- [ ] Tested on Linux
+- [ ] Tested on macOS
+- [ ] Tested on Windows
+
+## Checklist
+- [ ] Code follows project style guidelines
+- [ ] Documentation updated (README, man pages, etc.)
+- [ ] Tests added/updated
+- [ ] All tests pass locally
+- [ ] No new warnings introduced
+- [ ] PR title follows conventional commits
+- [ ] Commit messages are clear and descriptive
+
+## Screenshots/Screen Recordings
+<!-- If applicable, add screenshots or screen recordings -->
+
+## Additional Notes
+<!-- Any additional context or notes for reviewers -->
+```
+
+## Development Guidelines
+
+### Code Style
+- Follow Rust formatting with `cargo fmt`
+- Use `cargo clippy` to catch common mistakes
+- Document public functions and types
+- Use meaningful variable names
+
+### Testing
+- Write unit tests for new functionality
+- Ensure all tests pass before submitting
+- Test on multiple platforms if possible
+- Verify CLI functionality manually
+
+### Documentation
+- Update README.md for new features
+- Update man pages if CLI changes
+- Add examples for new functionality
+- Document breaking changes clearly
+
+## Need Help?
+
+- Check existing [Issues](https://github.com/thepinak503/echomind/issues)
+- Join [Discussions](https://github.com/thepinak503/echomind/discussions)
+- Review [CONTRIBUTING.md](CONTRIBUTING.md) for more details
+
+## Recognition
+
+All contributors will be acknowledged in our release notes and contributors list. Thank you for helping make Echomind better! 🎉
+
+---
+
+**Happy coding!** If you have any questions during the process, don't hesitate to ask in the discussions or issues.
 
 ---
 
