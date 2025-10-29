@@ -18,6 +18,8 @@ colored = "2.1"
 rustyline = "14.0"
 eventsource-stream = "0.2"
 futures = "0.3"
+arboard = "3.4"
+chrono = { version = "0.4", features = ["serde"] }
 
 [dev-dependencies]
 tempfile = "3.8"

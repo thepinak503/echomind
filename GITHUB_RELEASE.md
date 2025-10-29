@@ -170,4 +170,3 @@ Thanks to ch.at, ChatAnywhere, and the Rust community!
 If you find echomind useful, please ⭐ **star the repository**!
 
 Report issues: https://github.com/thepinak503/echomind/issues
-

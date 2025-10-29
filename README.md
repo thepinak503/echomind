@@ -10,6 +10,9 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 - **Interactive REPL mode**: Multi-turn conversations with `-i/--interactive`
 - **Coder mode**: Generate clean code with `--coder`
 - **File output**: Save responses directly to files with `--output`
+- **Clipboard support**: Read from/write to clipboard with `--clipboard` and `--to-clipboard`
+- **Conversation history**: Persistent context with `--history <file>`
+- **Multi-model comparison**: Compare responses from multiple models with `--compare`
 - **Configuration system**: Save defaults in `~/.config/echomind/config.toml`
 - **Advanced parameters**: Control temperature, max tokens, model selection
 - **Progress indicators**: Visual feedback during API calls
@@ -169,6 +172,54 @@ Display responses as they arrive:
 echo "Write a long essay about AI" | echomind --stream
 ```
 
+### Clipboard Support
+
+Read from and write to clipboard:
+
+```bash
+# Read from clipboard (instead of stdin)
+echomind --clipboard
+
+# Or on macOS
+pbpaste | echomind
+
+# Save response to clipboard
+echo "Explain Docker" | echomind --to-clipboard
+
+# Both: read from and write to clipboard
+echomind --clipboard --to-clipboard
+```
+
+### Conversation History
+
+Maintain context across multiple queries:
+
+```bash
+# First query with history
+echo "What is 2+2?" | echomind --history chat.json
+
+# Follow-up query with same history
+echo "What about multiplied by 3?" | echomind --history chat.json
+
+# Review history
+cat chat.json
+```
+
+### Multi-Model Comparison
+
+Compare responses from multiple models:
+
+```bash
+# Compare GPT-4 and Claude
+echo "Explain quantum computing" | echomind --compare gpt-4,claude-3-opus
+
+# Compare local and cloud models
+echo "Write a poem" | echomind --compare ollama/llama2,gpt-3.5-turbo
+
+# Use with clipboard
+echomind --clipboard --compare gpt-4,gpt-3.5-turbo,claude-3-sonnet
+```
+
 ### Advanced Parameters
 
 Control AI behavior:
@@ -246,6 +297,10 @@ echo "Hello" | echomind --provider openai
 | `--system <PROMPT>` | `-s` | Custom system prompt |
 | `--stream` | | Stream response as it arrives |
 | `--interactive` | `-i` | Interactive REPL mode |
+| `--clipboard` | | Read input from clipboard |
+| `--to-clipboard` | | Save response to clipboard |
+| `--history <FILE>` | | Conversation history file for persistent context |
+| `--compare <MODELS>` | | Compare responses from multiple models (comma-separated) |
 | `--api-key <KEY>` | | API key for provider |
 | `--timeout <SECS>` | | Request timeout in seconds |
 | `--verbose` | `-v` | Enable verbose output |
@@ -389,15 +444,6 @@ For connection errors, check:
 - Firewall settings
 - API endpoint status
 - Use `--verbose` for debugging
-
-## 🚧 Roadmap
-
-- [ ] Conversation history persistence
-- [ ] Plugin system for custom providers
-- [ ] Output formatting options (JSON, Markdown)
-- [ ] Clipboard integration
-- [ ] Voice input/output support
-- [ ] Multi-model comparison mode
 
 ---
 
