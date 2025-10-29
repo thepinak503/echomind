@@ -3,7 +3,7 @@
 
 [api]
 # Default API provider to use
-# Options: "chat", "chatanywhere", "openai", "claude", "ollama", or a custom URL
+# Options: "chat", "chatanywhere", "openai", "gemini", "claude", "ollama", or a custom URL
 provider = "chat"
 
 # API key for providers that require authentication
@@ -15,10 +15,14 @@ provider = "chat"
 # endpoint = "https://custom-api.example.com/v1/chat/completions"
 
 # Default model to use
-model = "gpt-3.5-turbo"
+model = "gpt-3.5-turbo"  # e.g., for gemini: "gemini-1.5-pro-latest"
 
 # Request timeout in seconds
 timeout = 30
+
+# Optional fallback providers, in order. Will try these if the primary fails.
+# Example: ["gemini", "ch.at"] will try gemini first, then ch.at
+# fallback_providers = ["gemini", "chat"]
 
 [defaults]
 # Default temperature for responses (0.0 = deterministic, 2.0 = very random)

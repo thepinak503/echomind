@@ -27,6 +27,9 @@ pub struct ApiConfig {
 
     #[serde(default = "default_timeout")]
     pub timeout: u64,
+
+    #[serde(default)]
+    pub fallback_providers: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,6 +75,7 @@ impl Default for ApiConfig {
             endpoint: None,
             model: default_model(),
             timeout: default_timeout(),
+            fallback_providers: Vec::new(),
         }
     }
 }

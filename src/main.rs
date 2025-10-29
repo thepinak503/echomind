@@ -140,13 +140,15 @@ async fn run() -> Result<()> {
 async fn run_single_query(args: Args, config: Config, input: String) -> Result<()> {
     let (coder, output) = args.resolve_coder_and_output();
 
-    // Determine provider
+    // Determine provider and fallback chain
     let provider_str = args.provider.as_ref()
         .unwrap_or(&config.api.provider);
-    let provider = Provider::from_string(provider_str)?;
+    let mut provider = Provider::from_string(provider_str)?;
+    let mut fallback_chain: Vec<String> = config.api.fallback_providers.clone();
 
     // Get API key
-    let api_key = args.api_key.or(config.api.api_key.clone());
+    let mut working_config = config.clone();
+    let mut api_key = args.api_key.or(working_config.api.api_key.clone());
 
     // Get timeout
     let timeout = args.timeout.unwrap_or(config.api.timeout);
@@ -154,8 +156,28 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     // Get model
     let model = args.model.as_ref().unwrap_or(&config.api.model).clone();
 
-    // Create API client
-    let client = ApiClient::new(provider, api_key, timeout)?;
+    // Create API client (with key prompt/save on demand)
+    let mut client = match ApiClient::new(provider.clone(), api_key.clone(), timeout) {
+        Ok(c) => c,
+        Err(EchomindError::MissingApiKey(_)) => {
+            // Try to guide user to get an API key (Gemini case) and save it
+            if std::io::stdin().is_terminal() {
+                eprintln!("{} {}", "Missing API key for provider".yellow(), provider_str);
+                eprintln!("Open Google AI Studio to create a Gemini key: https://aistudio.google.com/app/api-keys");
+                eprintln!("Paste the API key here and press Enter (leave blank to skip):");
+                let mut buf = String::new();
+                std::io::stdin().read_line(&mut buf).ok();
+                let entered = buf.trim();
+                if !entered.is_empty() {
+                    working_config.api.api_key = Some(entered.to_string());
+                    working_config.save()?;
+                    api_key = Some(entered.to_string());
+                }
+            }
+            ApiClient::new(provider.clone(), api_key.clone(), timeout)?
+        }
+        Err(e) => return Err(e),
+    };
 
     // Build messages
     let mut messages = Vec::new();
@@ -222,16 +244,34 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
         None
     };
 
-    // Send request
-    let content = if args.stream {
-        client.send_message_stream(request, |chunk| {
-            print!("{}", chunk);
-            use std::io::Write;
-            std::io::stdout().flush().unwrap();
-        }).await?
-    } else {
-        let resp = client.send_message(request).await?;
-        resp
+    // Send request with fallback chain
+    let mut last_err: Option<EchomindError> = None;
+    let content = loop {
+        let attempt = if args.stream {
+            client.send_message_stream(request.clone(), |chunk| {
+                print!("{}", chunk);
+                use std::io::Write;
+                std::io::stdout().flush().unwrap();
+            }).await
+        } else {
+            client.send_message(request.clone()).await
+        };
+
+        match attempt {
+            Ok(ok) => break ok,
+            Err(e) => {
+                last_err = Some(e);
+                if let Some(next_provider_str) = fallback_chain.first().cloned() {
+                    // Switch provider and retry
+                    fallback_chain.remove(0);
+                    provider = Provider::from_string(&next_provider_str)?;
+                    client = ApiClient::new(provider.clone(), api_key.clone(), timeout)?;
+                    continue;
+                } else {
+                    return Err(last_err.unwrap());
+                }
+            }
+        }
     };
 
     // Clear progress indicator
