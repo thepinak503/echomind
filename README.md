@@ -24,10 +24,16 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 
 | Operating System | Versions | Status | Notes |
 |-----------------|----------|--------|-------|
-| **Linux** | Ubuntu 20.04+, Debian 11+, Arch, Fedora 35+ | ✅ Fully Supported | All features work |
-| **macOS** | macOS 10.15+ (Catalina and newer) | ✅ Fully Supported | Intel & Apple Silicon (M1/M2/M3) |
-| **Windows** | Windows 10 (1809+), Windows 11 | ✅ Fully Supported | PowerShell 5.1+ or PowerShell Core 7+ |
-| **WSL** | WSL 1 & WSL 2 | ✅ Fully Supported | Use Linux installation method |
+| **Ubuntu/Debian** | Ubuntu 20.04+, Debian 11+ | ✅ Fully Supported | .deb packages available |
+| **Arch Linux** | Rolling | ✅ Fully Supported | PKGBUILD available |
+| **Fedora** | Fedora 35+, RHEL 9+ | ✅ Fully Supported | dnf package manager |
+| **CentOS/RHEL** | CentOS 8+, RHEL 8+ | ✅ Fully Supported | yum/dnf supported |
+| **openSUSE** | Leap 15.3+, Tumbleweed | ✅ Fully Supported | zypper package manager |
+| **Alpine Linux** | Alpine 3.15+ | ✅ Fully Supported | apk package manager |
+| **Other Linux** | Any with Rust support | ✅ Supported | Manual installation |
+| **macOS** | macOS 10.15+ (Catalina+) | ✅ Fully Supported | Intel & Apple Silicon |
+| **Windows** | Windows 10 (1809+), 11 | ✅ Fully Supported | PowerShell 5.1+/Core 7+ |
+| **WSL** | WSL 1 & WSL 2 | ✅ Fully Supported | Use Linux method |
 
 **Minimum Requirements:**
 - **RAM**: 50 MB
@@ -46,16 +52,23 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 
 #### 🐧 Linux
 
-**Supported:** Ubuntu 20.04+, Debian 11+, Arch Linux, Fedora 35+, and derivatives
+**Supported Distributions:**
+- Ubuntu 20.04+, Debian 11+ (apt)
+- Arch Linux, Manjaro (pacman)
+- Fedora 35+, RHEL 9+ (dnf)
+- CentOS 8+, Rocky Linux, AlmaLinux (yum/dnf)
+- openSUSE Leap 15.3+, Tumbleweed (zypper)
+- Alpine Linux 3.15+ (apk)
+- Any distro with Rust support
 
-**Arch Linux:**
+**Arch Linux / Manjaro:**
 ```bash
 git clone https://github.com/thepinak503/echomind.git
 cd echomind
 makepkg -si
 ```
 
-**Debian/Ubuntu (20.04, 22.04, 24.04):**
+**Debian / Ubuntu (20.04, 22.04, 24.04):**
 ```bash
 # Install build dependencies
 sudo apt install -y debhelper cargo rustc libssl-dev pkg-config git
@@ -67,9 +80,62 @@ dpkg-buildpackage -us -uc -b
 sudo dpkg -i ../echomind_0.3.0-1_amd64.deb
 ```
 
+**Fedora / RHEL 9+:**
+```bash
+# Install dependencies
+sudo dnf install -y cargo rust openssl-devel pkg-config git
+
+# Clone and build
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+cargo build --release
+sudo install target/release/echomind /usr/local/bin/
+```
+
+**CentOS / RHEL 8:**
+```bash
+# Install dependencies
+sudo yum install -y cargo rust openssl-devel pkgconfig git
+
+# Clone and build
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+cargo build --release
+sudo install target/release/echomind /usr/local/bin/
+```
+
+**openSUSE:**
+```bash
+# Install dependencies
+sudo zypper install -y cargo rust libopenssl-devel pkg-config git
+
+# Clone and build
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+cargo build --release
+sudo install target/release/echomind /usr/local/bin/
+```
+
+**Alpine Linux:**
+```bash
+# Install dependencies
+sudo apk add --no-cache cargo rust openssl-dev pkgconfig git
+
+# Clone and build
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+cargo build --release
+sudo install target/release/echomind /usr/local/bin/
+```
+
+**Universal (any Linux distro):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
+```
+
 #### 🍎 macOS
 
-**Supported:** macOS 10.15+ (Catalina, Big Sur, Monterey, Ventura, Sonoma)  
+**Supported:** macOS 10.15+ (Catalina, Big Sur, Monterey, Ventura, Sonoma)
 **Architecture:** Intel (x86_64) and Apple Silicon (M1/M2/M3 arm64)
 
 ```bash
@@ -82,7 +148,7 @@ sudo install -m 755 target/release/echomind /usr/local/bin/echomind
 
 #### 🪟 Windows
 
-**Supported:** Windows 10 (version 1809+), Windows 11  
+**Supported:** Windows 10 (version 1809+), Windows 11
 **PowerShell:** 5.1+ or PowerShell Core 7+
 
 **Quick Install (PowerShell):**
@@ -97,7 +163,7 @@ cargo install --git https://github.com/thepinak503/echomind
 
 **Pre-built binaries:** Download from [Releases](https://github.com/thepinak503/echomind/releases) (coming soon)
 
-**WSL (Windows Subsystem for Linux):**  
+**WSL (Windows Subsystem for Linux):**
 WSL 1 & WSL 2 supported - Use the Linux installation instructions
 
 ### 📦 Pre-built Binaries

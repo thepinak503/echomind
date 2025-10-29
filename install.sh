@@ -43,9 +43,11 @@ case "$OS" in
     Linux*)
         echo -e "${BLUE}Installing for Linux...${NC}"
 
-        # Detect package manager
+        # Detect package manager and distribution
         if command -v pacman &> /dev/null; then
             echo -e "${YELLOW}Arch Linux detected. You can use 'makepkg -si' instead.${NC}"
+            echo -e "${YELLOW}Installing manually...${NC}"
+            
         elif command -v apt &> /dev/null; then
             echo -e "${YELLOW}Debian/Ubuntu detected. Building .deb package...${NC}"
             # Install build dependencies if needed
@@ -63,10 +65,32 @@ case "$OS" in
             rm -rf "$TEMP_DIR"
             echo -e "${GREEN}✓ echomind installed successfully!${NC}"
             exit 0
+            
+        elif command -v dnf &> /dev/null; then
+            echo -e "${YELLOW}Fedora/RHEL detected. Installing dependencies...${NC}"
+            sudo dnf install -y cargo rust openssl-devel pkg-config
+            echo -e "${YELLOW}Installing manually...${NC}"
+            
+        elif command -v yum &> /dev/null; then
+            echo -e "${YELLOW}CentOS/RHEL detected. Installing dependencies...${NC}"
+            sudo yum install -y cargo rust openssl-devel pkgconfig
+            echo -e "${YELLOW}Installing manually...${NC}"
+            
+        elif command -v zypper &> /dev/null; then
+            echo -e "${YELLOW}openSUSE detected. Installing dependencies...${NC}"
+            sudo zypper install -y cargo rust libopenssl-devel pkg-config
+            echo -e "${YELLOW}Installing manually...${NC}"
+            
+        elif command -v apk &> /dev/null; then
+            echo -e "${YELLOW}Alpine Linux detected. Installing dependencies...${NC}"
+            sudo apk add --no-cache cargo rust openssl-dev pkgconfig
+            echo -e "${YELLOW}Installing manually...${NC}"
+            
+        else
+            echo -e "${YELLOW}Unknown distribution. Installing manually...${NC}"
         fi
 
-        # Fallback to manual installation
-        echo -e "${YELLOW}Manual installation...${NC}"
+        # Manual installation
         sudo install -Dm755 target/release/echomind /usr/local/bin/echomind
         sudo install -Dm644 README.md /usr/local/share/doc/echomind/README.md
         sudo install -Dm644 CONTRIBUTING.md /usr/local/share/doc/echomind/CONTRIBUTING.md

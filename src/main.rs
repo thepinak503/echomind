@@ -185,7 +185,7 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     } else {
         input.trim().to_string()
     };
-    
+
     let user_message = Message {
         role: "user".to_string(),
         content: user_content,
