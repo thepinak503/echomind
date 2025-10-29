@@ -17,8 +17,22 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 - **Advanced parameters**: Control temperature, max tokens, model selection
 - **Progress indicators**: Visual feedback during API calls
 - **Fast and async**: Optimized for performance with async I/O
-- **Cross-platform**: Works on Linux, macOS, and Windows
+- **Cross-platform**: Linux, macOS, Windows (see compatibility below)
 - **User-friendly errors**: Clear, actionable error messages
+
+## 💻 OS Compatibility
+
+| Operating System | Versions | Status | Notes |
+|-----------------|----------|--------|-------|
+| **Linux** | Ubuntu 20.04+, Debian 11+, Arch, Fedora 35+ | ✅ Fully Supported | All features work |
+| **macOS** | macOS 10.15+ (Catalina and newer) | ✅ Fully Supported | Intel & Apple Silicon (M1/M2/M3) |
+| **Windows** | Windows 10 (1809+), Windows 11 | ✅ Fully Supported | PowerShell 5.1+ or PowerShell Core 7+ |
+| **WSL** | WSL 1 & WSL 2 | ✅ Fully Supported | Use Linux installation method |
+
+**Minimum Requirements:**
+- **RAM**: 50 MB
+- **Disk Space**: 10 MB (binary only), 500 MB (with Rust toolchain)
+- **Network**: Internet connection for API calls
 
 ## 📦 Installation
 
@@ -32,6 +46,8 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 
 #### 🐧 Linux
 
+**Supported:** Ubuntu 20.04+, Debian 11+, Arch Linux, Fedora 35+, and derivatives
+
 **Arch Linux:**
 ```bash
 git clone https://github.com/thepinak503/echomind.git
@@ -39,7 +55,7 @@ cd echomind
 makepkg -si
 ```
 
-**Debian/Ubuntu:**
+**Debian/Ubuntu (20.04, 22.04, 24.04):**
 ```bash
 # Install build dependencies
 sudo apt install -y debhelper cargo rustc libssl-dev pkg-config git
@@ -53,6 +69,9 @@ sudo dpkg -i ../echomind_0.3.0-1_amd64.deb
 
 #### 🍎 macOS
 
+**Supported:** macOS 10.15+ (Catalina, Big Sur, Monterey, Ventura, Sonoma)  
+**Architecture:** Intel (x86_64) and Apple Silicon (M1/M2/M3 arm64)
+
 ```bash
 # From source (Homebrew formula coming soon)
 git clone https://github.com/thepinak503/echomind.git
@@ -62,6 +81,9 @@ sudo install -m 755 target/release/echomind /usr/local/bin/echomind
 ```
 
 #### 🪟 Windows
+
+**Supported:** Windows 10 (version 1809+), Windows 11  
+**PowerShell:** 5.1+ or PowerShell Core 7+
 
 **Quick Install (PowerShell):**
 ```powershell
@@ -75,7 +97,8 @@ cargo install --git https://github.com/thepinak503/echomind
 
 **Pre-built binaries:** Download from [Releases](https://github.com/thepinak503/echomind/releases) (coming soon)
 
-**WSL:** Use the Linux installation instructions
+**WSL (Windows Subsystem for Linux):**  
+WSL 1 & WSL 2 supported - Use the Linux installation instructions
 
 ### 📦 Pre-built Binaries
 
