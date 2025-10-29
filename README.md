@@ -66,7 +66,7 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 - Alpine Linux 3.15+ (apk)
 - Any distro with Rust support
 
-**Arch Linux / Manjaro:**
+**Arch Linux / Manjaro: (AUR)**
 ```bash
 yay -S echomind
 ```
