@@ -156,17 +156,38 @@ sudo install -m 755 target/release/echomind /usr/local/bin/echomind
 **Supported:** Windows 10 (version 1809+), Windows 11
 **PowerShell:** 5.1+ or PowerShell Core 7+
 
-**Quick Install (PowerShell):**
+**Quick Install (Recommended - Run as Administrator):**
 ```powershell
-irm -useb https://is.gd/echomindwin | iex
+# Download the executable
+curl -L https://github.com/thepinak503/echomind/raw/master/echomind-windows-x86_64.exe -o echomind.exe
+
+# Move to a directory in PATH (e.g., C:\Windows\System32)
+Move-Item echomind.exe C:\Windows\System32\echomind.exe
+
+# Or install to user directory
+$installDir = "$env:USERPROFILE\.local\bin"
+New-Item -ItemType Directory -Path $installDir -Force
+Move-Item echomind.exe "$installDir\echomind.exe"
+
+# Add to PATH (user environment variable)
+$path = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($path -notlike "*$installDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$path;$installDir", "User")
+}
+
+# Restart terminal and verify
+echomind --version
 ```
 
-**Using Cargo:**
+**Alternative: Automated Installation Script:**
+```powershell
+irm -useb https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex
+```
+
+**Using Cargo (if Rust is installed):**
 ```powershell
 cargo install --git https://github.com/thepinak503/echomind
 ```
-
-**Pre-built binaries:** Download from [Releases](https://github.com/thepinak503/echomind/releases) (coming soon)
 
 **WSL (Windows Subsystem for Linux):**
 WSL 1 & WSL 2 supported - Use the Linux installation instructions

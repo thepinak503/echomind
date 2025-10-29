@@ -284,22 +284,49 @@ This will:
 
 **Note:** You may need to restart your terminal after installation.
 
-### Method 2: Pre-built Binary (Coming Soon)
+### Method 2: Pre-built Binary (Recommended - Quick Install)
+
+**Run as Administrator for system-wide installation:**
 
 ```powershell
-# Download the latest release
-# Visit: https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-windows-amd64.exe
+# Download the executable using curl
+curl -L https://github.com/thepinak503/echomind/raw/master/echomind-windows-x86_64.exe -o echomind.exe
 
-# Or using PowerShell:
-Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-windows-amd64.exe" -OutFile "echomind.exe"
+# Option A: Install to System32 (requires admin)
+Move-Item echomind.exe C:\Windows\System32\echomind.exe
 
-# Move to a directory in PATH
-Move-Item echomind.exe C:\Windows\System32\
+# Option B: Install to user directory (no admin required)
+$installDir = "$env:USERPROFILE\.local\bin"
+New-Item -ItemType Directory -Path $installDir -Force
+Move-Item echomind.exe "$installDir\echomind.exe"
 
-# Or add to user bin:
-New-Item -ItemType Directory -Path "$HOME\.local\bin" -Force
-Move-Item echomind.exe "$HOME\.local\bin\"
-# Then add $HOME\.local\bin to your PATH
+# Add to PATH (user environment variable)
+$path = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($path -notlike "*$installDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$path;$installDir", "User")
+    Write-Host "Added $installDir to PATH. Please restart your terminal."
+}
+
+# Verify installation
+echomind --version
+```
+
+**Alternative using Invoke-WebRequest:**
+
+```powershell
+# Download
+Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/raw/master/echomind-windows-x86_64.exe" -OutFile "echomind.exe"
+
+# Install to user directory
+$installDir = "$env:USERPROFILE\.local\bin"
+New-Item -ItemType Directory -Path $installDir -Force
+Move-Item echomind.exe "$installDir\echomind.exe" -Force
+
+# Update PATH
+$path = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($path -notlike "*$installDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$path;$installDir", "User")
+}
 ```
 
 ### Method 3: Using Scoop (Coming Soon)
