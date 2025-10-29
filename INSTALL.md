@@ -83,101 +83,7 @@ sudo dpkg -i echomind_0.3.0-1_amd64.deb
 sudo apt-get install -f
 ```
 
-### Fedora / RHEL 9+
-
-#### Method 1: From Source
-
-```bash
-# Install dependencies
-sudo dnf install -y cargo rust openssl-devel pkg-config git
-
-# Clone and build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-
-# Install
-sudo install -Dm755 target/release/echomind /usr/local/bin/echomind
-sudo install -Dm644 README.md /usr/local/share/doc/echomind/README.md
-sudo install -Dm644 echomind.1 /usr/local/share/man/man1/echomind.1
-sudo gzip -f /usr/local/share/man/man1/echomind.1
-```
-
-#### Method 2: RPM Package (Future)
-
-RPM packages for Fedora and RHEL are planned for future releases.
-
-### CentOS / RHEL 8
-
-```bash
-# Install dependencies (may need EPEL repository)
-sudo yum install -y cargo rust openssl-devel pkgconfig git
-
-# Clone and build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-
-# Install
-sudo install -Dm755 target/release/echomind /usr/local/bin/echomind
-sudo install -Dm644 README.md /usr/local/share/doc/echomind/README.md
-sudo install -Dm644 echomind.1 /usr/local/share/man/man1/echomind.1
-sudo gzip -f /usr/local/share/man/man1/echomind.1
-```
-
-**Note:** On CentOS/RHEL 8, you may need to enable EPEL and PowerTools/CodeReady Builder repositories for Rust:
-```bash
-sudo yum install -y epel-release
-sudo yum config-manager --set-enabled powertools  # CentOS 8
-# OR
-sudo yum config-manager --set-enabled crb  # RHEL 8
-```
-
-### openSUSE
-
-#### For openSUSE Leap 15.3+ and Tumbleweed
-
-```bash
-# Install dependencies
-sudo zypper install -y cargo rust libopenssl-devel pkg-config git
-
-# Clone and build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-
-# Install
-sudo install -m 755 target/release/echomind /usr/local/bin/echomind
-sudo mkdir -p /usr/local/share/doc/echomind
-sudo install -m 644 README.md /usr/local/share/doc/echomind/README.md
-sudo mkdir -p /usr/local/share/man/man1
-sudo install -m 644 echomind.1 /usr/local/share/man/man1/echomind.1
-sudo gzip -f /usr/local/share/man/man1/echomind.1
-```
-
-### Alpine Linux
-
-#### Lightweight Installation
-
-```bash
-# Install dependencies
-sudo apk add --no-cache cargo rust openssl-dev pkgconfig git musl-dev
-
-# Clone and build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-
-# Install
-sudo install -Dm755 target/release/echomind /usr/local/bin/echomind
-sudo install -Dm644 README.md /usr/local/share/doc/echomind/README.md
-sudo install -Dm644 echomind.1 /usr/local/share/man/man1/echomind.1
-sudo gzip -f /usr/local/share/man/man1/echomind.1
-```
-
-**Note:** Alpine uses musl libc, which is fully compatible with echomind.
-
-### Linux: Universal From Source
+### Linux: From Source
 
 #### Automatic Installation Script
 
@@ -495,11 +401,8 @@ echo "Tell me a short story" | echomind --stream
 ### Linux
 
 - **Debian/Ubuntu**: `libssl-dev`, `pkg-config`
-- **Arch/Manjaro**: `openssl`, `pkg-config`
-- **Fedora/RHEL**: `openssl-devel`, `pkg-config`
-- **CentOS/Rocky/Alma**: `openssl-devel`, `pkgconfig`
-- **openSUSE**: `libopenssl-devel`, `pkg-config`
-- **Alpine**: `openssl-dev`, `pkgconfig`, `musl-dev`
+- **Arch**: `openssl`, `pkg-config`
+- **Fedora**: `openssl-devel`, `pkg-config`
 
 ### macOS
 
@@ -517,20 +420,15 @@ echo "Tell me a short story" | echomind --stream
 
 | Platform | Package Manager | Status |
 |----------|----------------|--------|
-| Arch Linux / Manjaro | pacman (via PKGBUILD) | ✅ Available |
+| Arch Linux | pacman (via PKGBUILD) | ✅ Available |
 | Arch Linux | AUR | 🔜 Coming Soon |
-| Debian / Ubuntu | dpkg/apt (.deb) | ✅ Available |
-| Debian / Ubuntu | PPA | 🔜 Coming Soon |
-| Fedora / RHEL | dnf/yum (manual) | ✅ Available |
+| Debian/Ubuntu | dpkg/apt (.deb) | ✅ Available |
+| Debian/Ubuntu | PPA | 🔜 Coming Soon |
 | Fedora | rpm | 🔜 Coming Soon |
-| CentOS / Rocky / Alma | yum/dnf (manual) | ✅ Available |
-| openSUSE | zypper (manual) | ✅ Available |
-| Alpine Linux | apk (manual) | ✅ Available |
 | macOS | Homebrew | 🔜 Coming Soon |
 | Windows | Scoop | 🔜 Coming Soon |
 | Windows | Chocolatey | 🔜 Coming Soon |
 | Any | Cargo | ✅ Available |
-| Any Linux | install.sh script | ✅ Available |
 
 ---
 
