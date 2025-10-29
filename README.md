@@ -107,11 +107,16 @@ Pipe input to echomind from stdin:
 echo "Hello, how are you?" | echomind
 ```
 
-Use with other commands:
+Use with other commands and add a prompt:
 
 ```bash
+# Pipe output and add a prompt
+ls | echomind "Explain these files"
+cat file.txt | echomind "Summarize this"
+git diff | echomind "Review these changes"
+
+# Without prompt
 cat file.txt | echomind
-git diff | echomind "Summarize these changes"
 ```
 
 ### Interactive Mode
@@ -306,6 +311,7 @@ echo "Hello" | echomind --provider openai
 | `--verbose` | `-v` | Enable verbose output |
 | `--init-config` | | Initialize default config file |
 | `--show-config` | | Show config file location and contents |
+| `<PROMPT>` | | Optional prompt to append to piped input |
 | `--help` | `-h` | Display help information |
 | `--version` | `-V` | Display version information |
 
@@ -327,15 +333,25 @@ echo "Hello" | echomind --provider openai
 ```bash
 # Explain command output
 ls -la | echomind "Explain these files"
+df -h | echomind "Analyze disk usage"
 
 # Debug error messages
 ./script.sh 2>&1 | echomind "What's wrong with this error?"
+
+# Git workflows
+git status | echomind "Summarize changes"
+git log --oneline -10 | echomind "Explain recent commits"
+git diff | echomind "Review this code"
+
+# System information
+ps aux | echomind "Show top processes"
+netstat -tulpn | echomind "Explain open ports"
 
 # Generate code from description
 echo "Create a Rust function to parse JSON" | echomind -co parser.rs
 
 # Review code
-cat main.rs | echomind "Review this code for issues"
+cat main.rs | echomind "Review this code for security issues"
 
 # Translate text
 echo "Hello world" | echomind -s "Translate to Spanish"

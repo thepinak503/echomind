@@ -112,9 +112,10 @@ async fn run() -> Result<()> {
         println!("  -h, --help               Show detailed help");
         println!("\n{}", "Examples:".yellow().bold());
         println!("  echo 'Hello AI' | echomind");
+        println!("  ls | echomind \"Explain these files\"");
         println!("  pbpaste | echomind  # or use --clipboard");
         println!("  echo 'code task' | echomind --compare gpt-4,claude-3-opus");
-        println!("  echo 'Question' | echomind --history chat.json");
+        println!("  git diff | echomind \"Summarize changes\"");
         println!("\nFor more information, run: echomind --help");
         return Ok(());
     } else {
@@ -178,10 +179,16 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
         });
     }
 
-    // Add user message
+    // Add user message (combine input with optional prompt)
+    let user_content = if let Some(prompt) = &args.prompt {
+        format!("{}\n\n{}", input.trim(), prompt)
+    } else {
+        input.trim().to_string()
+    };
+    
     let user_message = Message {
         role: "user".to_string(),
-        content: input.trim().to_string(),
+        content: user_content,
     };
     messages.push(user_message.clone());
 

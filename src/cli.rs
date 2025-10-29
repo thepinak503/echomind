@@ -89,6 +89,10 @@ pub struct Args {
     /// Compare responses from multiple models (comma-separated)
     #[arg(long)]
     pub compare: Option<String>,
+
+    /// Optional prompt to append to input (useful when piping)
+    #[arg(value_name = "PROMPT")]
+    pub prompt: Option<String>,
 }
 
 impl Args {
