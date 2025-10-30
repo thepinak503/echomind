@@ -1,13 +1,13 @@
 use crate::error::{EchomindError, Result};
+use futures::StreamExt;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use futures::StreamExt;
 
 #[derive(Debug, Clone)]
 pub enum Provider {
-    Chat,           // ch.at
-    ChatAnywhere,   // chatanywhere.tech
+    Chat,         // ch.at
+    ChatAnywhere, // chatanywhere.tech
     OpenAI,
     Gemini,
     Claude,
@@ -49,7 +49,10 @@ impl Provider {
     }
 
     pub fn requires_api_key(&self) -> bool {
-        matches!(self, Provider::OpenAI | Provider::Claude | Provider::ChatAnywhere | Provider::Gemini)
+        matches!(
+            self,
+            Provider::OpenAI | Provider::Claude | Provider::ChatAnywhere | Provider::Gemini
+        )
     }
 
     pub fn name(&self) -> &str {
@@ -168,14 +171,22 @@ impl ApiClient {
 
             if !response.status().is_success() {
                 let status = response.status().as_u16();
-                let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
-                return Err(EchomindError::ApiError { status, message: error_text });
+                let error_text = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
+                return Err(EchomindError::ApiError {
+                    status,
+                    message: error_text,
+                });
             }
 
             let list: GeminiModelList = response.json().await?;
             Ok(list.models.unwrap_or_default())
         } else {
-            Err(EchomindError::InvalidProvider(self.provider.name().to_string()))
+            Err(EchomindError::InvalidProvider(
+                self.provider.name().to_string(),
+            ))
         }
     }
 
@@ -183,7 +194,9 @@ impl ApiClient {
         match self.provider {
             Provider::Gemini => {
                 // Build Gemini URL with model and API key as query param
-                let model = request.model.unwrap_or_else(|| "gemini-1.5-pro-latest".to_string());
+                let model = request
+                    .model
+                    .unwrap_or_else(|| "gemini-1.5-pro-latest".to_string());
                 let base = self.provider.endpoint();
                 let url = format!("{}/models/{}:generateContent", base, model);
 
@@ -192,7 +205,11 @@ impl ApiClient {
                     .clone()
                     .ok_or_else(|| EchomindError::MissingApiKey("gemini".to_string()))?;
 
-                let gemini_req = GeminiRequest::from_messages(&request.messages, request.temperature, request.max_tokens);
+                let gemini_req = GeminiRequest::from_messages(
+                    &request.messages,
+                    request.temperature,
+                    request.max_tokens,
+                );
 
                 let response = self
                     .client
@@ -204,8 +221,14 @@ impl ApiClient {
 
                 if !response.status().is_success() {
                     let status = response.status().as_u16();
-                    let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
-                    return Err(EchomindError::ApiError { status, message: error_text });
+                    let error_text = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown error".to_string());
+                    return Err(EchomindError::ApiError {
+                        status,
+                        message: error_text,
+                    });
                 }
 
                 let resp: GeminiResponse = response.json().await?;
@@ -226,7 +249,10 @@ impl ApiClient {
                 // Check for API errors
                 if !response.status().is_success() {
                     let status = response.status().as_u16();
-                    let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+                    let error_text = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown error".to_string());
                     return Err(EchomindError::ApiError {
                         status,
                         message: error_text,
@@ -244,7 +270,11 @@ impl ApiClient {
         }
     }
 
-    pub async fn send_message_stream<F>(&self, request: ChatRequest, mut callback: F) -> Result<String>
+    pub async fn send_message_stream<F>(
+        &self,
+        request: ChatRequest,
+        mut callback: F,
+    ) -> Result<String>
     where
         F: FnMut(&str),
     {
@@ -269,7 +299,10 @@ impl ApiClient {
         // Check for API errors
         if !response.status().is_success() {
             let status = response.status().as_u16();
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(EchomindError::ApiError {
                 status,
                 message: error_text,
@@ -336,7 +369,11 @@ struct GeminiPart {
 }
 
 impl GeminiRequest {
-    fn from_messages(messages: &[Message], temperature: Option<f32>, max_tokens: Option<u32>) -> Self {
+    fn from_messages(
+        messages: &[Message],
+        temperature: Option<f32>,
+        max_tokens: Option<u32>,
+    ) -> Self {
         let contents = messages
             .iter()
             .map(|m| GeminiContent {
@@ -344,7 +381,9 @@ impl GeminiRequest {
                     "system" => "user".to_string(), // map system to user for simplicity
                     other => other.to_string(),
                 },
-                parts: vec![GeminiPart { text: m.content.clone() }],
+                parts: vec![GeminiPart {
+                    text: m.content.clone(),
+                }],
             })
             .collect();
 
@@ -357,7 +396,10 @@ impl GeminiRequest {
             None
         };
 
-        GeminiRequest { contents, generation_config }
+        GeminiRequest {
+            contents,
+            generation_config,
+        }
     }
 }
 

@@ -5,18 +5,18 @@ mod error;
 mod repl;
 
 use api::{ApiClient, ChatRequest, Message, Provider};
-use cli::Args;
+use arboard::Clipboard;
+use chrono::{DateTime, Utc};
 use clap::Parser;
+use cli::Args;
 use colored::Colorize;
 use config::Config;
 use error::{EchomindError, Result};
 use indicatif::{ProgressBar, ProgressStyle};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::IsTerminal;
 use tokio::io::{self, AsyncReadExt};
-use arboard::Clipboard;
-use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct HistoryEntry {
@@ -53,7 +53,10 @@ async fn run() -> Result<()> {
                 .map_err(|e| EchomindError::FileError(e.to_string()))?;
             println!("{}", contents);
         } else {
-            println!("{}", "Configuration file does not exist. Use --init-config to create it.".yellow());
+            println!(
+                "{}",
+                "Configuration file does not exist. Use --init-config to create it.".yellow()
+            );
         }
         return Ok(());
     }
@@ -103,7 +106,9 @@ async fn run() -> Result<()> {
         println!("  --to-clipboard           Save response to clipboard");
         println!("  --history <FILE>         Conversation history file");
         println!("  --compare <MODELS>       Compare multiple models (comma-separated)");
-        println!("  -p, --provider <NAME>    API provider (chat, chatanywhere, openai, claude, ollama)");
+        println!(
+            "  -p, --provider <NAME>    API provider (chat, chatanywhere, openai, claude, ollama)"
+        );
         println!("  -m, --model <MODEL>      Model to use");
         println!("  -i, --interactive        Interactive REPL mode");
         println!("  -t, --temperature <NUM>  Temperature (0.0-2.0)");
@@ -141,8 +146,7 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     let (coder, output) = args.resolve_coder_and_output();
 
     // Determine provider and fallback chain
-    let provider_str = args.provider.as_ref()
-        .unwrap_or(&config.api.provider);
+    let provider_str = args.provider.as_ref().unwrap_or(&config.api.provider);
     let mut provider = Provider::from_string(provider_str)?;
     let mut fallback_chain: Vec<String> = config.api.fallback_providers.clone();
 
@@ -162,7 +166,11 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
         Err(EchomindError::MissingApiKey(_)) => {
             // Try to guide user to get an API key (Gemini case) and save it
             if std::io::stdin().is_terminal() {
-                eprintln!("{} {}", "Missing API key for provider".yellow(), provider_str);
+                eprintln!(
+                    "{} {}",
+                    "Missing API key for provider".yellow(),
+                    provider_str
+                );
                 eprintln!("Open Google AI Studio to create a Gemini key: https://aistudio.google.com/app/api-keys");
                 eprintln!("Paste the API key here and press Enter (leave blank to skip):");
                 let mut buf = String::new();
@@ -247,11 +255,13 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     // Send request with fallback chain
     let content = loop {
         let attempt = if args.stream {
-            client.send_message_stream(request.clone(), |chunk| {
-                print!("{}", chunk);
-                use std::io::Write;
-                std::io::stdout().flush().unwrap();
-            }).await
+            client
+                .send_message_stream(request.clone(), |chunk| {
+                    print!("{}", chunk);
+                    use std::io::Write;
+                    std::io::stdout().flush().unwrap();
+                })
+                .await
         } else {
             client.send_message(request.clone()).await
         };
@@ -290,7 +300,8 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
             lines.pop();
         }
 
-        lines.into_iter()
+        lines
+            .into_iter()
             .filter(|l| !l.trim().is_empty())
             .collect::<Vec<_>>()
             .join("\n")
@@ -300,8 +311,7 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
 
     // Save to file if specified
     if let Some(outfile) = &output {
-        fs::write(outfile, &output_content)
-            .map_err(|e| EchomindError::FileError(e.to_string()))?;
+        fs::write(outfile, &output_content).map_err(|e| EchomindError::FileError(e.to_string()))?;
         println!("{} {}", "✅ Saved to".green(), outfile);
     }
 
@@ -338,8 +348,7 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
 
 async fn run_interactive(args: Args, config: Config) -> Result<()> {
     // Determine provider
-    let provider_str = args.provider.as_ref()
-        .unwrap_or(&config.api.provider);
+    let provider_str = args.provider.as_ref().unwrap_or(&config.api.provider);
     let provider = Provider::from_string(provider_str)?;
 
     // Get API key
@@ -369,7 +378,8 @@ fn read_from_clipboard() -> Result<String> {
     let mut clipboard = Clipboard::new()
         .map_err(|e| EchomindError::Other(format!("Failed to access clipboard: {}", e)))?;
 
-    clipboard.get_text()
+    clipboard
+        .get_text()
         .map_err(|e| EchomindError::Other(format!("Failed to read from clipboard: {}", e)))
 }
 
@@ -378,7 +388,8 @@ fn write_to_clipboard(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new()
         .map_err(|e| EchomindError::Other(format!("Failed to access clipboard: {}", e)))?;
 
-    clipboard.set_text(text)
+    clipboard
+        .set_text(text)
         .map_err(|e| EchomindError::Other(format!("Failed to write to clipboard: {}", e)))
 }
 
@@ -394,21 +405,32 @@ fn load_history(history_file: &str) -> Result<Vec<Message>> {
     let entries: Vec<HistoryEntry> = serde_json::from_str(&contents)
         .map_err(|e| EchomindError::ParseError(format!("Failed to parse history: {}", e)))?;
 
-    Ok(entries.into_iter().map(|e| Message {
-        role: e.role,
-        content: e.content,
-    }).collect())
+    Ok(entries
+        .into_iter()
+        .map(|e| Message {
+            role: e.role,
+            content: e.content,
+        })
+        .collect())
 }
 
 // Save conversation history
-fn save_history(history_file: &str, messages: &[Message], provider: &str, model: &str) -> Result<()> {
-    let entries: Vec<HistoryEntry> = messages.iter().map(|msg| HistoryEntry {
-        timestamp: Utc::now(),
-        role: msg.role.clone(),
-        content: msg.content.clone(),
-        provider: Some(provider.to_string()),
-        model: Some(model.to_string()),
-    }).collect();
+fn save_history(
+    history_file: &str,
+    messages: &[Message],
+    provider: &str,
+    model: &str,
+) -> Result<()> {
+    let entries: Vec<HistoryEntry> = messages
+        .iter()
+        .map(|msg| HistoryEntry {
+            timestamp: Utc::now(),
+            role: msg.role.clone(),
+            content: msg.content.clone(),
+            provider: Some(provider.to_string()),
+            model: Some(model.to_string()),
+        })
+        .collect();
 
     let json = serde_json::to_string_pretty(&entries)
         .map_err(|e| EchomindError::ParseError(format!("Failed to serialize history: {}", e)))?;
@@ -420,16 +442,13 @@ fn save_history(history_file: &str, messages: &[Message], provider: &str, model:
 }
 
 // Compare responses from multiple models
-async fn compare_models(
-    input: &str,
-    models_str: &str,
-    args: &Args,
-    config: &Config,
-) -> Result<()> {
+async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Config) -> Result<()> {
     let models: Vec<&str> = models_str.split(',').map(|s| s.trim()).collect();
 
     if models.is_empty() {
-        return Err(EchomindError::Other("No models specified for comparison".to_string()));
+        return Err(EchomindError::Other(
+            "No models specified for comparison".to_string(),
+        ));
     }
 
     println!("{}", "=== Multi-Model Comparison ===".cyan().bold());
@@ -449,11 +468,18 @@ async fn compare_models(
             let parts: Vec<&str> = model_name.split('/').collect();
             (parts[0], *parts.get(1).unwrap_or(&model_name))
         } else {
-            (args.provider.as_deref().unwrap_or(&config.api.provider), model_name)
+            (
+                args.provider.as_deref().unwrap_or(&config.api.provider),
+                model_name,
+            )
         };
 
         let provider = Provider::from_string(provider_name)?;
-        let api_key = args.api_key.as_ref().or(config.api.api_key.as_ref()).cloned();
+        let api_key = args
+            .api_key
+            .as_ref()
+            .or(config.api.api_key.as_ref())
+            .cloned();
         let timeout = args.timeout.unwrap_or(config.api.timeout);
 
         let client = ApiClient::new(provider, api_key, timeout)?;

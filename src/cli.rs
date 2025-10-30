@@ -4,7 +4,8 @@ use clap::Parser;
 #[command(name = "echomind")]
 #[command(version)]
 #[command(about = "Send piped input to AI chat API and print response")]
-#[command(long_about = "A lightweight, fast command-line tool that pipes input to an AI chat API and outputs the response.
+#[command(
+    long_about = "A lightweight, fast command-line tool that pipes input to an AI chat API and outputs the response.
 
 Examples:
   echo 'Hello, how are you?' | echomind
@@ -12,7 +13,8 @@ Examples:
   echo 'write a Python function' | echomind --coder --output code.py
   echomind --interactive
   echomind --init-config
-  echo 'explain quantum computing' | echomind --provider openai --model gpt-4")]
+  echo 'explain quantum computing' | echomind --provider openai --model gpt-4"
+)]
 pub struct Args {
     /// Enable coder mode (generates clean code without explanations)
     #[arg(short = 'c', long)]

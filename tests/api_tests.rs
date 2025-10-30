@@ -1,16 +1,37 @@
-use echomind::api::{Provider, Message, ChatRequest};
+use echomind::api::{ChatRequest, Message, Provider};
 
 #[test]
 fn test_provider_from_string() {
-    assert!(matches!(Provider::from_string("chat").unwrap(), Provider::Chat));
-    assert!(matches!(Provider::from_string("chatanywhere").unwrap(), Provider::ChatAnywhere));
-    assert!(matches!(Provider::from_string("openai").unwrap(), Provider::OpenAI));
-    assert!(matches!(Provider::from_string("claude").unwrap(), Provider::Claude));
-    assert!(matches!(Provider::from_string("ollama").unwrap(), Provider::Ollama));
+    assert!(matches!(
+        Provider::from_string("chat").unwrap(),
+        Provider::Chat
+    ));
+    assert!(matches!(
+        Provider::from_string("chatanywhere").unwrap(),
+        Provider::ChatAnywhere
+    ));
+    assert!(matches!(
+        Provider::from_string("openai").unwrap(),
+        Provider::OpenAI
+    ));
+    assert!(matches!(
+        Provider::from_string("claude").unwrap(),
+        Provider::Claude
+    ));
+    assert!(matches!(
+        Provider::from_string("ollama").unwrap(),
+        Provider::Ollama
+    ));
 
     // Test case insensitivity
-    assert!(matches!(Provider::from_string("OPENAI").unwrap(), Provider::OpenAI));
-    assert!(matches!(Provider::from_string("Chat").unwrap(), Provider::Chat));
+    assert!(matches!(
+        Provider::from_string("OPENAI").unwrap(),
+        Provider::OpenAI
+    ));
+    assert!(matches!(
+        Provider::from_string("Chat").unwrap(),
+        Provider::Chat
+    ));
 
     // Test custom endpoint
     let custom = Provider::from_string("https://custom.api.com/v1/chat").unwrap();
@@ -22,10 +43,22 @@ fn test_provider_from_string() {
 
 #[test]
 fn test_provider_endpoints() {
-    assert_eq!(Provider::Chat.endpoint(), "https://ch.at/v1/chat/completions");
-    assert_eq!(Provider::ChatAnywhere.endpoint(), "https://api.chatanywhere.tech/v1/chat/completions");
-    assert_eq!(Provider::OpenAI.endpoint(), "https://api.openai.com/v1/chat/completions");
-    assert_eq!(Provider::Ollama.endpoint(), "http://localhost:11434/api/chat");
+    assert_eq!(
+        Provider::Chat.endpoint(),
+        "https://ch.at/v1/chat/completions"
+    );
+    assert_eq!(
+        Provider::ChatAnywhere.endpoint(),
+        "https://api.chatanywhere.tech/v1/chat/completions"
+    );
+    assert_eq!(
+        Provider::OpenAI.endpoint(),
+        "https://api.openai.com/v1/chat/completions"
+    );
+    assert_eq!(
+        Provider::Ollama.endpoint(),
+        "http://localhost:11434/api/chat"
+    );
 }
 
 #[test]
@@ -50,12 +83,10 @@ fn test_message_creation() {
 #[test]
 fn test_chat_request_serialization() {
     let request = ChatRequest {
-        messages: vec![
-            Message {
-                role: "user".to_string(),
-                content: "Test message".to_string(),
-            }
-        ],
+        messages: vec![Message {
+            role: "user".to_string(),
+            content: "Test message".to_string(),
+        }],
         model: Some("gpt-4".to_string()),
         temperature: Some(0.7),
         max_tokens: Some(1000),
@@ -71,12 +102,10 @@ fn test_chat_request_serialization() {
 #[test]
 fn test_chat_request_optional_fields() {
     let request = ChatRequest {
-        messages: vec![
-            Message {
-                role: "user".to_string(),
-                content: "Test".to_string(),
-            }
-        ],
+        messages: vec![Message {
+            role: "user".to_string(),
+            content: "Test".to_string(),
+        }],
         model: None,
         temperature: None,
         max_tokens: None,

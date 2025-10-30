@@ -35,11 +35,15 @@ impl Repl {
 
     pub async fn run(&mut self) -> Result<()> {
         println!("{}", "=== Echomind Interactive Mode ===".cyan().bold());
-        println!("Type your message and press Enter. Use {} to exit, {} to clear history.\n",
-                 "Ctrl+D or 'exit'".yellow(), "'clear'".yellow());
+        println!(
+            "Type your message and press Enter. Use {} to exit, {} to clear history.\n",
+            "Ctrl+D or 'exit'".yellow(),
+            "'clear'".yellow()
+        );
 
-        let mut rl = DefaultEditor::new()
-            .map_err(|e| crate::error::EchomindError::Other(format!("Failed to initialize readline: {}", e)))?;
+        let mut rl = DefaultEditor::new().map_err(|e| {
+            crate::error::EchomindError::Other(format!("Failed to initialize readline: {}", e))
+        })?;
 
         loop {
             let readline = rl.readline(&format!("{} ", "You:".green().bold()));
@@ -84,11 +88,13 @@ impl Repl {
                     print!("{} ", "Assistant:".blue().bold());
 
                     let response = if self.stream {
-                        self.client.send_message_stream(request, |chunk| {
-                            print!("{}", chunk);
-                            use std::io::Write;
-                            std::io::stdout().flush().unwrap();
-                        }).await?
+                        self.client
+                            .send_message_stream(request, |chunk| {
+                                print!("{}", chunk);
+                                use std::io::Write;
+                                std::io::stdout().flush().unwrap();
+                            })
+                            .await?
                     } else {
                         let resp = self.client.send_message(request).await?;
                         println!("{}", resp);
@@ -115,7 +121,10 @@ impl Repl {
                     break;
                 }
                 Err(err) => {
-                    return Err(crate::error::EchomindError::Other(format!("Readline error: {}", err)));
+                    return Err(crate::error::EchomindError::Other(format!(
+                        "Readline error: {}",
+                        err
+                    )));
                 }
             }
         }

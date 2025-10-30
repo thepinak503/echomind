@@ -1,4 +1,4 @@
-use echomind::config::{Config, ApiConfig, Defaults};
+use echomind::config::{ApiConfig, Config, Defaults};
 
 #[test]
 fn test_default_config() {

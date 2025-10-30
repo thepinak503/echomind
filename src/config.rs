@@ -105,11 +105,13 @@ impl Config {
         let config_path = Self::config_path()?;
 
         if config_path.exists() {
-            let contents = fs::read_to_string(&config_path)
-                .map_err(|e| EchomindError::ConfigError(format!("Failed to read config file: {}", e)))?;
+            let contents = fs::read_to_string(&config_path).map_err(|e| {
+                EchomindError::ConfigError(format!("Failed to read config file: {}", e))
+            })?;
 
-            toml::from_str(&contents)
-                .map_err(|e| EchomindError::ConfigError(format!("Failed to parse config file: {}", e)))
+            toml::from_str(&contents).map_err(|e| {
+                EchomindError::ConfigError(format!("Failed to parse config file: {}", e))
+            })
         } else {
             // Return default config if file doesn't exist
             Ok(Config::default())
@@ -121,22 +123,26 @@ impl Config {
 
         // Create parent directory if it doesn't exist
         if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| EchomindError::ConfigError(format!("Failed to create config directory: {}", e)))?;
+            fs::create_dir_all(parent).map_err(|e| {
+                EchomindError::ConfigError(format!("Failed to create config directory: {}", e))
+            })?;
         }
 
-        let contents = toml::to_string_pretty(self)
-            .map_err(|e| EchomindError::ConfigError(format!("Failed to serialize config: {}", e)))?;
+        let contents = toml::to_string_pretty(self).map_err(|e| {
+            EchomindError::ConfigError(format!("Failed to serialize config: {}", e))
+        })?;
 
-        fs::write(&config_path, contents)
-            .map_err(|e| EchomindError::ConfigError(format!("Failed to write config file: {}", e)))?;
+        fs::write(&config_path, contents).map_err(|e| {
+            EchomindError::ConfigError(format!("Failed to write config file: {}", e))
+        })?;
 
         Ok(())
     }
 
     pub fn config_path() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir()
-            .ok_or_else(|| EchomindError::ConfigError("Could not determine config directory".to_string()))?;
+        let config_dir = dirs::config_dir().ok_or_else(|| {
+            EchomindError::ConfigError("Could not determine config directory".to_string())
+        })?;
 
         Ok(config_dir.join("echomind").join("config.toml"))
     }
@@ -144,7 +150,10 @@ impl Config {
     pub fn init_default_config() -> Result<()> {
         let config = Config::default();
         config.save()?;
-        println!("Created default configuration at: {}", Self::config_path()?.display());
+        println!(
+            "Created default configuration at: {}",
+            Self::config_path()?.display()
+        );
         Ok(())
     }
 }
