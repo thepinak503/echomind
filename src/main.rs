@@ -245,7 +245,6 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     };
 
     // Send request with fallback chain
-    let mut last_err: Option<EchomindError> = None;
     let content = loop {
         let attempt = if args.stream {
             client.send_message_stream(request.clone(), |chunk| {
@@ -260,7 +259,6 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
         match attempt {
             Ok(ok) => break ok,
             Err(e) => {
-                last_err = Some(e);
                 if let Some(next_provider_str) = fallback_chain.first().cloned() {
                     // Switch provider and retry
                     fallback_chain.remove(0);
@@ -268,7 +266,7 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
                     client = ApiClient::new(provider.clone(), api_key.clone(), timeout)?;
                     continue;
                 } else {
-                    return Err(last_err.unwrap());
+                    return Err(e);
                 }
             }
         }

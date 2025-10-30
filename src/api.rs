@@ -149,6 +149,7 @@ impl ApiClient {
     }
 
     // List available models for Gemini
+    #[allow(dead_code)]
     pub async fn list_models(&self) -> Result<Vec<GeminiModel>> {
         if let Provider::Gemini = self.provider {
             let base = self.provider.endpoint();
@@ -312,13 +313,13 @@ impl ApiClient {
 struct GeminiRequest {
     contents: Vec<GeminiContent>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    generationConfig: Option<GeminiGenerationConfig>,
+    generation_config: Option<GeminiGenerationConfig>,
 }
 
 #[derive(Serialize, Debug)]
 struct GeminiGenerationConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    maxOutputTokens: Option<u32>,
+    max_output_tokens: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f32>,
 }
@@ -347,16 +348,16 @@ impl GeminiRequest {
             })
             .collect();
 
-        let generationConfig = if temperature.is_some() || max_tokens.is_some() {
+        let generation_config = if temperature.is_some() || max_tokens.is_some() {
             Some(GeminiGenerationConfig {
-                maxOutputTokens: max_tokens,
+                max_output_tokens: max_tokens,
                 temperature,
             })
         } else {
             None
         };
 
-        GeminiRequest { contents, generationConfig }
+        GeminiRequest { contents, generation_config }
     }
 }
 
@@ -386,24 +387,26 @@ impl GeminiResponse {
             .and_then(|mut c| c.pop())
             .and_then(|cand| cand.content)
             .and_then(|c| c.parts)
-            .and_then(|mut p| p.into_iter().find_map(|part| part.text))
+            .and_then(|p| p.into_iter().find_map(|part| part.text))
     }
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 pub struct GeminiModelList {
     pub models: Option<Vec<GeminiModel>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
+#[allow(dead_code)]
 pub struct GeminiModel {
     pub name: Option<String>,
     #[serde(default)]
-    pub displayName: Option<String>,
+    pub display_name: Option<String>,
     #[serde(default)]
     pub description: Option<String>,
     #[serde(default)]
-    pub inputTokenLimit: Option<u32>,
+    pub input_token_limit: Option<u32>,
     #[serde(default)]
-    pub outputTokenLimit: Option<u32>,
+    pub output_token_limit: Option<u32>,
 }
