@@ -63,9 +63,6 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 - Fedora 35+, RHEL 9+ (dnf)
 - CentOS 8+, Rocky Linux, AlmaLinux (yum/dnf)
 - openSUSE Leap 15.3+, Tumbleweed (zypper)
-- Alpine Linux 3.15+ (apk)
-- Any distro with Rust support
-
 **Arch Linux / Manjaro: (AUR)**
 ```bash
 yay -S echomind
@@ -125,19 +122,6 @@ cd echomind
 cargo build --release
 sudo install target/release/echomind /usr/local/bin/
 ```
-
-**Alpine Linux:**
-```bash
-# Install dependencies
-sudo apk add --no-cache cargo rust openssl-dev pkgconfig git
-
-# Clone and build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-sudo install target/release/echomind /usr/local/bin/
-```
-
 **Universal (any Linux distro):**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
@@ -149,7 +133,6 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 **Architecture:** Intel (x86_64) and Apple Silicon (M1/M2/M3 arm64)
 
 ```bash
-# From source (Homebrew formula coming soon)
 git clone https://github.com/thepinak503/echomind.git
 cd echomind
 cargo build --release
@@ -168,20 +151,6 @@ curl -L https://github.com/thepinak503/echomind/raw/master/echomind-windows-x86_
 
 # Move to a directory in PATH (e.g., C:\Windows\System32)
 Move-Item echomind.exe C:\Windows\System32\echomind.exe
-
-# Or install to user directory
-$installDir = "$env:USERPROFILE\.local\bin"
-New-Item -ItemType Directory -Path $installDir -Force
-Move-Item echomind.exe "$installDir\echomind.exe"
-
-# Add to PATH (user environment variable)
-$path = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($path -notlike "*$installDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$path;$installDir", "User")
-}
-
-# Restart terminal and verify
-echomind --version
 ```
 
 **Alternative: Automated Installation Script:**
