@@ -49,4 +49,4 @@ For privacy-related questions, please contact us through our [GitHub repository]
 
 We may update this Privacy Policy from time to time. We will notify users of any changes by updating the "Last updated" date.
 
-Last updated: October 30, 2024
+Last updated: October 30, 2025
