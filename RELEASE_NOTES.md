@@ -13,6 +13,7 @@ Echomind is a lightweight, fast command-line tool written in Rust that pipes inp
 ### 🔌 Multiple API Provider Support
 - **ChatAnywhere** (`api.chatanywhere.tech`)
 - **OpenAI** (GPT-3.5, GPT-4)
+- **Gemini** (Google AI)
 - **Claude** (Anthropic)
 - **Ollama** (Local LLMs)
 - **Custom endpoints** (bring your own API)
@@ -323,6 +324,7 @@ echo "Question?" | echomind --provider https://my-api.com/v1/chat
 | **chat** | ch.at | ❌ No | any |
 | **chatanywhere** | api.chatanywhere.tech | ✅ Yes | gpt-3.5-turbo, gpt-4 |
 | **openai** | api.openai.com | ✅ Yes | gpt-3.5-turbo, gpt-4, gpt-4-turbo |
+| **gemini** | generativelanguage.googleapis.com | ✅ Yes | gemini-1.5-pro, gemini-pro |
 | **claude** | api.anthropic.com | ✅ Yes | claude-3-opus, claude-3-sonnet |
 | **ollama** | localhost:11434 | ❌ No | llama2, mistral, codellama, etc. |
 | **custom** | Your URL | Depends | Any |

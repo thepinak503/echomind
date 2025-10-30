@@ -4,7 +4,7 @@ A powerful, lightweight AI-powered CLI tool with **multi-platform support** and 
 
 ## 🌟 Highlights
 
-- ✨ **Multiple API Providers**: ChatAnywhere, OpenAI, Claude, Ollama, custom endpoints
+- ✨ **Multiple API Providers**: ChatAnywhere, OpenAI, Gemini, Claude, Ollama, custom endpoints
 - 💬 **Interactive REPL Mode**: Multi-turn conversations with `-i/--interactive`
 - 🌊 **Streaming Responses**: Real-time display with `--stream`
 - ⚙️ **Configuration System**: Save defaults in `~/.config/echomind/config.toml`
@@ -65,7 +65,7 @@ echo "Tell me a story" | echomind --stream
 ## 🆕 What's New
 
 ### Features
-- Multiple API provider support (chat, chatanywhere, openai, claude, ollama)
+- Multiple API provider support (chat, chatanywhere, openai, gemini, claude, ollama)
 - Interactive REPL mode for conversations
 - Streaming responses in real-time
 - Configuration file support (`~/.config/echomind/config.toml`)
@@ -134,6 +134,7 @@ echo "Write a poem" | echomind -t 1.5
 | chat (ch.at) | ❌ | gpt-3.5-turbo |
 | chatanywhere | ✅ | gpt-3.5-turbo, gpt-4 |
 | openai | ✅ | gpt-3.5-turbo, gpt-4 |
+| gemini | ✅ | gemini-1.5-pro, gemini-pro |
 | claude | ✅ | claude-3-opus, claude-3-sonnet |
 | ollama | ❌ | llama2, mistral, codellama |
 | custom | Depends | Any |

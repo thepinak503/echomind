@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.0] - 2025-10-28
+## [0.3.0] - 2024-10-30
 
 ### 🎉 Major Release - Comprehensive Enhancements
 
