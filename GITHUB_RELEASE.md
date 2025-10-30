@@ -4,14 +4,20 @@ A powerful, lightweight AI-powered CLI tool with **multi-platform support** and 
 
 ## 🌟 Highlights
 
-- ✨ **Multiple API Providers**: ChatAnywhere, OpenAI, Gemini, Claude, Ollama, custom endpoints
+- ✨ **Multiple API Providers**: ChatAnywhere, OpenAI, Gemini, Claude, Ollama, Grok, Mistral, Cohere, custom endpoints
 - 💬 **Interactive REPL Mode**: Multi-turn conversations with `-i/--interactive`
 - 🌊 **Streaming Responses**: Real-time display with `--stream`
+- 🖼️ **Multimodal Support**: Image input for vision-capable models
+- 📝 **Batch Processing**: Process multiple queries from files
+- 📋 **Clipboard Integration**: Read from/write to clipboard
+- 📚 **Conversation History**: Persistent context across sessions
+- ⚖️ **Model Comparison**: Compare responses from multiple models
+- 🎨 **Output Formatting**: Custom formatting (text, json, template)
 - ⚙️ **Configuration System**: Save defaults in `~/.config/echomind/config.toml`
 - 🎨 **Enhanced UX**: Progress indicators, colored output, better errors
 - 🛠️ **Advanced Parameters**: Temperature, max-tokens, model selection, custom prompts
 - 📦 **Cross-Platform**: Linux (Arch, Debian/Ubuntu), macOS, Windows
-- 🧪 **Tested**: 10 unit tests, CI/CD, zero warnings
+- 🧪 **Tested**: 11 unit tests, CI/CD, zero warnings
 
 ## 📦 Quick Install
 
@@ -65,13 +71,20 @@ echo "Tell me a story" | echomind --stream
 ## 🆕 What's New
 
 ### Features
-- Multiple API provider support (chat, chatanywhere, openai, gemini, claude, ollama)
+- Multiple API provider support (chat, chatanywhere, openai, gemini, claude, ollama, grok, mistral, cohere)
 - Interactive REPL mode for conversations
 - Streaming responses in real-time
+- Multimodal support with image input for vision models
+- Batch processing of multiple queries from files
+- Clipboard integration (read from/write to clipboard)
+- Conversation history with persistent context
+- Model comparison across multiple providers
+- Custom output formatting (text, json, templates)
+- Conversation presets for common use cases
 - Configuration file support (`~/.config/echomind/config.toml`)
 - Advanced AI parameters (temperature, max-tokens, system prompts)
 - Progress indicators and colored output
-- Better error messages
+- Enhanced error messages with actionable suggestions
 
 ### CLI Options
 - `--provider/-p`: Select API provider
@@ -82,6 +95,14 @@ echo "Tell me a story" | echomind --stream
 - `--stream`: Stream responses
 - `--interactive/-i`: Interactive mode
 - `--api-key`: API key
+- `--clipboard`: Read from clipboard
+- `--to-clipboard`: Save to clipboard
+- `--history`: Conversation history file
+- `--compare`: Compare multiple models
+- `--format`: Output format (text, json, template)
+- `--image`: Include image for vision models
+- `--preset`: Use conversation preset
+- `--batch`: Process queries from file
 - `--init-config`: Create config file
 - `--verbose/-v`: Debug output
 
@@ -125,19 +146,41 @@ echo "Help me" | echomind --provider ollama --model llama2
 
 # Creative writing
 echo "Write a poem" | echomind -t 1.5
+
+# Multimodal (with image)
+echomind --image photo.jpg "What's in this image?"
+
+# Batch processing
+echo -e "What is AI?\nExplain Rust\nWrite hello world" > queries.txt
+echomind --batch queries.txt
+
+# Compare models
+echo "Explain recursion" | echomind --compare "gpt-3.5-turbo,claude-3-haiku"
+
+# Clipboard integration
+echomind --clipboard --to-clipboard "Summarize this text"
+
+# Custom formatting
+echo "List 3 fruits" | echomind --format json
+
+# Conversation history
+echomind -i --history mychat.json
 ```
 
 ## 🎯 Supported Providers
 
-| Provider | API Key | Models |
-|----------|---------|--------|
-| chat (ch.at) | ❌ | gpt-3.5-turbo |
-| chatanywhere | ✅ | gpt-3.5-turbo, gpt-4 |
-| openai | ✅ | gpt-3.5-turbo, gpt-4 |
-| gemini | ✅ | gemini-1.5-pro, gemini-pro |
-| claude | ✅ | claude-3-opus, claude-3-sonnet |
-| ollama | ❌ | llama2, mistral, codellama |
-| custom | Depends | Any |
+| Provider | API Key | Models | Multimodal |
+|----------|---------|--------|------------|
+| chat (ch.at) | ❌ | gpt-3.5-turbo | ❌ |
+| chatanywhere | ✅ | gpt-3.5-turbo, gpt-4 | ❌ |
+| openai | ✅ | gpt-3.5-turbo, gpt-4, gpt-4-vision | ✅ |
+| gemini | ✅ | gemini-1.5-pro, gemini-pro | ✅ |
+| claude | ✅ | claude-3-opus, claude-3-sonnet | ✅ |
+| ollama | ❌ | llama2, mistral, codellama, llava | ✅ |
+| grok | ✅ | grok-1 | ❌ |
+| mistral | ✅ | mistral-large, mistral-medium | ❌ |
+| cohere | ✅ | command, command-light | ❌ |
+| custom | Depends | Any | Depends |
 
 ## 🔄 Migration from v0.2.0
 
@@ -147,12 +190,15 @@ New config location: `~/.config/echomind/config.toml` (auto-created with `--init
 
 ## 📊 Stats
 
-- **2,832+ lines added**
-- **20 new files**
-- **10 tests (all passing)**
+- **3,200+ lines of code**
+- **25+ new files**
+- **11 tests (all passing)**
 - **0 warnings**
 - **3 platforms supported**
-- **6 API providers**
+- **9 API providers**
+- **Multimodal support**
+- **Batch processing**
+- **Advanced formatting**
 
 ## 🙏 Credits
 

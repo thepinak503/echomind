@@ -11,11 +11,18 @@ This release represents a complete overhaul of echomind with numerous new featur
 ### Added
 
 #### Core Features
-- **Multiple API Provider Support**: Now supports chat (ch.at), ChatAnywhere, OpenAI, Claude, Ollama, and custom endpoints
+- **Multiple API Provider Support**: Now supports chat (ch.at), ChatAnywhere, OpenAI, Claude, Ollama, Grok, Mistral, Cohere, and custom endpoints
 - **Interactive REPL Mode**: Multi-turn conversations with `-i/--interactive` flag
 - **Streaming Responses**: Real-time response display with `--stream` flag
 - **Configuration System**: TOML-based config file at `~/.config/echomind/config.toml`
 - **Progress Indicators**: Visual feedback during API calls with spinners
+- **Multimodal Support**: Image input for vision-capable models with `--image` flag
+- **Batch Processing**: Process multiple queries from files with `--batch` flag
+- **Clipboard Integration**: Read from/write to clipboard with `--clipboard`/`--to-clipboard`
+- **Conversation History**: Persistent context with `--history` flag
+- **Model Comparison**: Compare responses from multiple models with `--compare`
+- **Output Formatting**: Custom formatting with `--format` (text, json, template)
+- **Conversation Presets**: Predefined conversation templates with `--preset`
 
 #### CLI Enhancements
 - `--provider` / `-p`: Select API provider
@@ -30,6 +37,14 @@ This release represents a complete overhaul of echomind with numerous new featur
 - `--verbose` / `-v`: Enable debug output
 - `--init-config`: Create default configuration file
 - `--show-config`: Display config file location and contents
+- `--clipboard`: Read input from clipboard
+- `--to-clipboard`: Save response to clipboard
+- `--history`: Persistent conversation history
+- `--compare`: Compare responses from multiple models
+- `--format`: Output formatting (text, json, template)
+- `--image`: Multimodal support for vision models
+- `--preset`: Predefined conversation presets
+- `--batch`: Process multiple queries from file
 
 #### Developer Features
 - **Modular Architecture**: Code organized into `api.rs`, `cli.rs`, `config.rs`, `error.rs`, `repl.rs`

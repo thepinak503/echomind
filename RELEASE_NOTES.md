@@ -12,16 +12,20 @@ Echomind is a lightweight, fast command-line tool written in Rust that pipes inp
 
 ### 🔌 Multiple API Provider Support
 - **ChatAnywhere** (`api.chatanywhere.tech`)
-- **OpenAI** (GPT-3.5, GPT-4)
+- **OpenAI** (GPT-3.5, GPT-4, GPT-4 Vision)
 - **Gemini** (Google AI)
 - **Claude** (Anthropic)
 - **Ollama** (Local LLMs)
+- **Grok** (xAI)
+- **Mistral** (Mistral AI)
+- **Cohere** (Cohere)
 - **Custom endpoints** (bring your own API)
 - Still supports free **ch.at** API
 
 ```bash
 echo "Hello!" | echomind --provider openai --model gpt-4
 echo "Help me" | echomind --provider ollama --model llama2
+echo "Be creative" | echomind --provider grok --model grok-1
 ```
 
 ### 💬 Interactive REPL Mode
@@ -89,6 +93,90 @@ Now automatically removes markdown code fences!
 ```bash
 echo "write Python hello world" | echomind --coder --output hello.py
 echo "create REST API" | echomind -co api.py
+```
+
+### 🖼️ Multimodal Support
+Include images in your prompts for vision-capable models!
+
+```bash
+# Analyze an image
+echomind --image diagram.png "Explain this flowchart"
+
+# Vision models with OpenAI
+echo "What's in this photo?" | echomind --provider openai --model gpt-4-vision-preview --image photo.jpg
+
+# Local vision models with Ollama
+echomind --provider ollama --model llava "Describe this image" --image screenshot.png
+```
+
+### 📝 Batch Processing
+Process multiple queries from a file, one per line!
+
+```bash
+# Create a file with multiple queries
+echo -e "What is AI?\nExplain Rust\nWrite hello world in Python" > queries.txt
+
+# Process all queries
+echomind --batch queries.txt
+
+# Each query gets processed separately with clear output separation
+```
+
+### 📋 Clipboard Integration
+Seamlessly work with your clipboard!
+
+```bash
+# Read from clipboard
+echomind --clipboard "Summarize this text"
+
+# Save response to clipboard
+echo "Hello world in 5 languages" | echomind --to-clipboard
+
+# Combine both
+echomind --clipboard --to-clipboard "Translate to French"
+```
+
+### 📚 Conversation History
+Maintain persistent context across sessions!
+
+```bash
+# Start a conversation with history
+echomind --interactive --history mychat.json
+
+# Continue the conversation later
+echomind -i --history mychat.json
+```
+
+### ⚖️ Model Comparison
+Compare responses from multiple models side-by-side!
+
+```bash
+# Compare GPT-3.5 vs Claude
+echo "Explain quantum computing" | echomind --compare "gpt-3.5-turbo,claude-3-haiku"
+
+# Compare multiple models
+echomind --compare "openai:gpt-4,mistral:mistral-large,ollama:llama2" "Write a haiku about AI"
+```
+
+### 🎨 Output Formatting
+Customize how responses are displayed!
+
+```bash
+# JSON output for programmatic use
+echo "List 3 fruits" | echomind --format json
+
+# Custom template
+echomind --format "template:Response: {response}\nConfidence: {confidence}" "Is Rust fast?"
+```
+
+### 🎭 Conversation Presets
+Use predefined conversation templates!
+
+```bash
+# Configure presets in your config file
+# Then use them easily
+echomind --preset code-review "Please review this code: $(cat main.rs)"
+echomind --preset summarize "Summarize this article: $(cat article.txt)"
 ```
 
 ---
@@ -194,8 +282,8 @@ echo "Explain quantum computing" | echomind --stream
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--provider` | `-p` | Select API provider (chat, chatanywhere, openai, claude, ollama) |
-| `--model` | `-m` | Choose model (gpt-3.5-turbo, gpt-4, claude-3-opus, etc.) |
+| `--provider` | `-p` | Select API provider (chat, chatanywhere, openai, claude, ollama, grok, mistral, cohere, custom) |
+| `--model` | `-m` | Choose model (gpt-3.5-turbo, gpt-4, claude-3-opus, grok-1, etc.) |
 | `--temperature` | `-t` | Control randomness (0.0-2.0) |
 | `--max-tokens` | | Limit response length |
 | `--system` | `-s` | Custom system prompt |
@@ -203,6 +291,14 @@ echo "Explain quantum computing" | echomind --stream
 | `--interactive` | `-i` | Interactive REPL mode |
 | `--api-key` | | API key (or use ECHOMIND_API_KEY env var) |
 | `--timeout` | | Request timeout in seconds |
+| `--clipboard` | | Read input from clipboard |
+| `--to-clipboard` | | Save response to clipboard |
+| `--history` | | Conversation history file |
+| `--compare` | | Compare responses from multiple models |
+| `--format` | | Output format (text, json, template) |
+| `--image` | | Image file for vision models |
+| `--preset` | | Use conversation preset |
+| `--batch` | | Process queries from file |
 | `--verbose` | `-v` | Enable debug output |
 | `--init-config` | | Create default config file |
 | `--show-config` | | Display config file location and contents |
@@ -313,21 +409,44 @@ echo "Help me" | echomind --provider ollama --model llama2
 
 # Custom endpoint
 echo "Question?" | echomind --provider https://my-api.com/v1/chat
+
+# Multimodal with vision
+echomind --image flowchart.png "Explain this process"
+
+# Batch processing
+echo -e "What is recursion?\nExplain closures\nWrite a sorting algorithm" > topics.txt
+echomind --batch topics.txt
+
+# Model comparison
+echo "Pros and cons of microservices" | echomind --compare "gpt-4,claude-3-opus,mistral-large"
+
+# Clipboard workflow
+# Copy some text, then:
+echomind --clipboard --to-clipboard "Summarize this article"
+
+# JSON output for tools
+echo "List 5 programming languages" | echomind --format json
+
+# Conversation with history
+echomind -i --history coding-session.json
 ```
 
 ---
 
 ## 🎯 Supported Providers
 
-| Provider | Endpoint | API Key Required | Models |
-|----------|----------|------------------|--------|
-| **chat** | ch.at | ❌ No | any |
-| **chatanywhere** | api.chatanywhere.tech | ✅ Yes | gpt-3.5-turbo, gpt-4 |
-| **openai** | api.openai.com | ✅ Yes | gpt-3.5-turbo, gpt-4, gpt-4-turbo |
-| **gemini** | generativelanguage.googleapis.com | ✅ Yes | gemini-1.5-pro, gemini-pro |
-| **claude** | api.anthropic.com | ✅ Yes | claude-3-opus, claude-3-sonnet |
-| **ollama** | localhost:11434 | ❌ No | llama2, mistral, codellama, etc. |
-| **custom** | Your URL | Depends | Any |
+| Provider | Endpoint | API Key Required | Models | Multimodal |
+|----------|----------|------------------|--------|------------|
+| **chat** | ch.at | ❌ No | gpt-3.5-turbo | ❌ |
+| **chatanywhere** | api.chatanywhere.tech | ✅ Yes | gpt-3.5-turbo, gpt-4 | ❌ |
+| **openai** | api.openai.com | ✅ Yes | gpt-3.5-turbo, gpt-4, gpt-4-vision | ✅ |
+| **gemini** | generativelanguage.googleapis.com | ✅ Yes | gemini-1.5-pro, gemini-pro | ✅ |
+| **claude** | api.anthropic.com | ✅ Yes | claude-3-opus, claude-3-sonnet | ✅ |
+| **ollama** | localhost:11434 | ❌ No | llama2, mistral, codellama, llava | ✅ |
+| **grok** | api.x.ai | ✅ Yes | grok-1 | ❌ |
+| **mistral** | api.mistral.ai | ✅ Yes | mistral-large, mistral-medium | ❌ |
+| **cohere** | api.cohere.ai | ✅ Yes | command, command-light | ❌ |
+| **custom** | Your URL | Depends | Any | Depends |
 
 ---
 
@@ -343,12 +462,13 @@ echo "Question?" | echomind --provider https://my-api.com/v1/chat
 
 ## 📊 Statistics
 
-- **Lines of code**: 2,832+ added
-- **New files**: 20
-- **Tests**: 10 (all passing)
+- **Lines of code**: 3,200+ total
+- **New files**: 25+
+- **Tests**: 11 (all passing)
 - **Compiler warnings**: 0
 - **Supported platforms**: 3 (Linux, macOS, Windows)
-- **Supported API providers**: 6
+- **Supported API providers**: 9
+- **New features**: Multimodal, batch processing, clipboard, history, comparison, formatting
 
 ---
 
