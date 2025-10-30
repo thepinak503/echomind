@@ -7,7 +7,6 @@ use rustyline::DefaultEditor;
 
 pub struct Repl {
     client: ApiClient,
-    config: Config,
     conversation: Vec<Message>,
     temperature: f32,
     max_tokens: Option<u32>,
@@ -31,7 +30,6 @@ impl Repl {
             max_tokens: max_tokens.or(config.defaults.max_tokens),
             model: model.unwrap_or(config.api.model.clone()),
             stream,
-            config,
         }
     }
 
