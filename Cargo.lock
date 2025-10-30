@@ -362,6 +362,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "arboard",
+ "base64",
  "chrono",
  "clap",
  "colored 2.2.0",

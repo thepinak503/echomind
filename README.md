@@ -196,6 +196,15 @@ echo "Write a poem" | echomind --provider claude --model claude-3-opus
 # Ollama (local)
 echo "Help me" | echomind --provider ollama --model llama2
 
+# Grok (xAI)
+echo "Explain memes" | echomind --provider grok --model grok-beta
+
+# Mistral
+echo "Write a story" | echomind --provider mistral --model mistral-large-latest
+
+# Cohere
+echo "Summarize this text" | echomind --provider cohere --model command
+
 # Custom endpoint
 echo "Question?" | echomind --provider https://your-api.com/v1/chat/completions
 ```
@@ -270,6 +279,10 @@ echo "Explain briefly" | echomind --max-tokens 100
 # Custom system prompt
 echo "Hello" | echomind --system "You are a pirate. Respond in pirate speak."
 
+# Output formatting
+echo "Hello" | echomind --format json
+echo "Hello" | echomind --format "template:Response from {provider}/{model}: {content}"
+
 # Combine parameters
 echo "Code review" | echomind -p openai -m gpt-4 -t 0.3 --max-tokens 2000
 ```
@@ -337,6 +350,7 @@ echo "Hello" | echomind --provider openai
 | `--to-clipboard` | | Save response to clipboard |
 | `--history <FILE>` | | Conversation history file for persistent context |
 | `--compare <MODELS>` | | Compare responses from multiple models (comma-separated) |
+| `--format <FORMAT>` | | Output format: text, json, or template:<template> |
 | `--api-key <KEY>` | | API key for provider |
 | `--timeout <SECS>` | | Request timeout in seconds |
 | `--verbose` | `-v` | Enable verbose output |
@@ -355,6 +369,9 @@ echo "Hello" | echomind --provider openai
 | openai | `https://api.openai.com/v1/chat/completions` | Yes |
 | claude | `https://api.anthropic.com/v1/messages` | Yes |
 | ollama | `http://localhost:11434/api/chat` | No |
+| grok | `https://api.x.ai/v1/chat/completions` | Yes |
+| mistral | `https://api.mistral.ai/v1/chat/completions` | Yes |
+| cohere | `https://api.cohere.ai/v1/chat` | Yes |
 | custom | Your custom URL | Depends |
 
 ## 💡 Examples

@@ -28,7 +28,7 @@ pub struct Args {
     #[arg(long)]
     pub co: Option<String>,
 
-    /// API provider to use (chat, chatanywhere, openai, claude, ollama, or custom URL)
+    /// API provider to use (chat, chatanywhere, openai, claude, ollama, grok, mistral, cohere, or custom URL)
     #[arg(short = 'p', long)]
     pub provider: Option<String>,
 
@@ -91,6 +91,14 @@ pub struct Args {
     /// Compare responses from multiple models (comma-separated)
     #[arg(long)]
     pub compare: Option<String>,
+
+    /// Output format: text, json, or template:<template>
+    #[arg(long)]
+    pub format: Option<String>,
+
+    /// Image file to include with the request (for vision models)
+    #[arg(long)]
+    pub image: Option<String>,
 
     /// Optional prompt to append to input (useful when piping)
     #[arg(value_name = "PROMPT")]

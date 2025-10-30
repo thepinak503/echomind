@@ -4,7 +4,7 @@ mod config;
 mod error;
 mod repl;
 
-use api::{ApiClient, ChatRequest, Message, Provider};
+use api::{ApiClient, ChatRequest, Message, Provider, ContentPart, ImageUrl, MessageContent};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
 use clap::Parser;
@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::IsTerminal;
 use tokio::io::{self, AsyncReadExt};
+use base64::{Engine as _, engine::general_purpose};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct HistoryEntry {
@@ -25,6 +26,7 @@ struct HistoryEntry {
     content: String,
     provider: Option<String>,
     model: Option<String>,
+    has_image: bool,
 }
 
 #[tokio::main]
@@ -106,8 +108,9 @@ async fn run() -> Result<()> {
         println!("  --to-clipboard           Save response to clipboard");
         println!("  --history <FILE>         Conversation history file");
         println!("  --compare <MODELS>       Compare multiple models (comma-separated)");
+        println!("  --format <FORMAT>        Output format (text, json, template:<template>)");
         println!(
-            "  -p, --provider <NAME>    API provider (chat, chatanywhere, openai, claude, ollama)"
+            "  -p, --provider <NAME>    API provider (chat, chatanywhere, openai, claude, ollama, grok, mistral, cohere)"
         );
         println!("  -m, --model <MODEL>      Model to use");
         println!("  -i, --interactive        Interactive REPL mode");
@@ -198,15 +201,12 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
 
     // Add system message if in coder mode or custom system prompt
     if let Some(system_prompt) = args.system {
-        messages.push(Message {
-            role: "system".to_string(),
-            content: system_prompt,
-        });
+        messages.push(Message::text("system".to_string(), system_prompt));
     } else if coder {
-        messages.push(Message {
-            role: "system".to_string(),
-            content: "You are a code generator. Always and only output raw, runnable code with no explanations, comments, markdown fences, or prose. Do not include code block syntax like triple backticks.".to_string(),
-        });
+        messages.push(Message::text(
+            "system".to_string(),
+            "You are a code generator. Always and only output raw, runnable code with no explanations, comments, markdown fences, or prose. Do not include code block syntax like triple backticks.".to_string(),
+        ));
     }
 
     // Add user message (combine input with optional prompt)
@@ -216,9 +216,20 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
         input.trim().to_string()
     };
 
-    let user_message = Message {
-        role: "user".to_string(),
-        content: user_content,
+    let user_message = if let Some(image_path) = &args.image {
+        // Load image and create multimodal message
+        let image_data = load_image_as_base64(image_path)?;
+        let parts = vec![
+            ContentPart::Text { text: user_content },
+            ContentPart::ImageUrl {
+                image_url: ImageUrl {
+                    url: format!("data:image/jpeg;base64,{}", image_data),
+                },
+            },
+        ];
+        Message::multimodal("user".to_string(), parts)
+    } else {
+        Message::text("user".to_string(), user_content)
     };
     messages.push(user_message.clone());
 
@@ -309,22 +320,29 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
         content.clone()
     };
 
+    // Format output if specified
+    let formatted_output = if let Some(format_str) = &args.format {
+        format_output(&output_content, format_str, provider_str, &model)?
+    } else {
+        output_content
+    };
+
     // Save to file if specified
     if let Some(outfile) = &output {
-        fs::write(outfile, &output_content).map_err(|e| EchomindError::FileError(e.to_string()))?;
+        fs::write(outfile, &formatted_output).map_err(|e| EchomindError::FileError(e.to_string()))?;
         println!("{} {}", "✅ Saved to".green(), outfile);
     }
 
     // Save to clipboard if specified
     if args.to_clipboard {
-        write_to_clipboard(&output_content)?;
+        write_to_clipboard(&formatted_output)?;
         println!("{}", "✅ Copied to clipboard".green());
     }
 
     // Display output if not saved to file
     if output.is_none() {
         if !args.stream {
-            println!("{}", output_content);
+            println!("{}", formatted_output);
         } else {
             println!(); // Add newline after streaming
         }
@@ -333,10 +351,7 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     // Save to history if specified
     if let Some(history_file) = &args.history {
         let mut history_messages = vec![user_message];
-        history_messages.push(Message {
-            role: "assistant".to_string(),
-            content,
-        });
+        history_messages.push(Message::text("assistant".to_string(), content));
         save_history(history_file, &history_messages, provider_str, &model)?;
         if args.verbose {
             eprintln!("{}", "✅ Saved to history".green());
@@ -407,10 +422,7 @@ fn load_history(history_file: &str) -> Result<Vec<Message>> {
 
     Ok(entries
         .into_iter()
-        .map(|e| Message {
-            role: e.role,
-            content: e.content,
-        })
+        .map(|e| Message::text(e.role, e.content))
         .collect())
 }
 
@@ -426,9 +438,10 @@ fn save_history(
         .map(|msg| HistoryEntry {
             timestamp: Utc::now(),
             role: msg.role.clone(),
-            content: msg.content.clone(),
+            content: msg.get_text().unwrap_or("").to_string(),
             provider: Some(provider.to_string()),
             model: Some(model.to_string()),
+            has_image: matches!(msg.content, api::MessageContent::MultiModal(_)),
         })
         .collect();
 
@@ -439,6 +452,38 @@ fn save_history(
         .map_err(|e| EchomindError::FileError(format!("Failed to write history: {}", e)))?;
 
     Ok(())
+}
+
+// Load image file and encode as base64
+fn load_image_as_base64(path: &str) -> Result<String> {
+    let data = fs::read(path).map_err(|e| EchomindError::FileError(format!("Failed to read image: {}", e)))?;
+    Ok(general_purpose::STANDARD.encode(&data))
+}
+
+// Format output based on format specification
+fn format_output(content: &str, format_str: &str, provider: &str, model: &str) -> Result<String> {
+    match format_str {
+        "json" => {
+            let output = serde_json::json!({
+                "content": content,
+                "provider": provider,
+                "model": model,
+                "timestamp": Utc::now().to_rfc3339()
+            });
+            Ok(serde_json::to_string_pretty(&output)?)
+        }
+        "text" => Ok(content.to_string()),
+        _ if format_str.starts_with("template:") => {
+            let template = &format_str[9..]; // Remove "template:" prefix
+            let formatted = template
+                .replace("{content}", content)
+                .replace("{provider}", provider)
+                .replace("{model}", model)
+                .replace("{timestamp}", &Utc::now().to_rfc3339());
+            Ok(formatted)
+        }
+        _ => Err(EchomindError::Other(format!("Unknown format: {}", format_str))),
+    }
 }
 
 // Compare responses from multiple models
@@ -484,10 +529,7 @@ async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Con
 
         let client = ApiClient::new(provider, api_key, timeout)?;
 
-        let messages = vec![Message {
-            role: "user".to_string(),
-            content: input.to_string(),
-        }];
+        let messages = vec![Message::text("user".to_string(), input.to_string())];
 
         let request = ChatRequest {
             messages,

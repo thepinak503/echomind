@@ -19,6 +19,7 @@ fn test_config_serialization() {
             endpoint: None,
             model: "gpt-4".to_string(),
             timeout: 60,
+            fallback_providers: Vec::new(),
         },
         defaults: Defaults {
             temperature: 0.5,

@@ -22,6 +22,18 @@ fn test_provider_from_string() {
         Provider::from_string("ollama").unwrap(),
         Provider::Ollama
     ));
+    assert!(matches!(
+        Provider::from_string("grok").unwrap(),
+        Provider::Grok
+    ));
+    assert!(matches!(
+        Provider::from_string("mistral").unwrap(),
+        Provider::Mistral
+    ));
+    assert!(matches!(
+        Provider::from_string("cohere").unwrap(),
+        Provider::Cohere
+    ));
 
     // Test case insensitivity
     assert!(matches!(
@@ -59,6 +71,18 @@ fn test_provider_endpoints() {
         Provider::Ollama.endpoint(),
         "http://localhost:11434/api/chat"
     );
+    assert_eq!(
+        Provider::Grok.endpoint(),
+        "https://api.x.ai/v1/chat/completions"
+    );
+    assert_eq!(
+        Provider::Mistral.endpoint(),
+        "https://api.mistral.ai/v1/chat/completions"
+    );
+    assert_eq!(
+        Provider::Cohere.endpoint(),
+        "https://api.cohere.ai/v1/chat"
+    );
 }
 
 #[test]
@@ -67,26 +91,29 @@ fn test_provider_requires_api_key() {
     assert!(Provider::ChatAnywhere.requires_api_key());
     assert!(Provider::OpenAI.requires_api_key());
     assert!(Provider::Claude.requires_api_key());
+    assert!(Provider::Grok.requires_api_key());
+    assert!(Provider::Mistral.requires_api_key());
+    assert!(Provider::Cohere.requires_api_key());
     assert!(!Provider::Ollama.requires_api_key());
 }
 
 #[test]
 fn test_message_creation() {
-    let msg = Message {
-        role: "user".to_string(),
-        content: "Hello, AI!".to_string(),
-    };
+    let msg = Message::text(
+        "user".to_string(),
+        "Hello, AI!".to_string(),
+    );
     assert_eq!(msg.role, "user");
-    assert_eq!(msg.content, "Hello, AI!");
+    assert_eq!(msg.get_text(), Some("Hello, AI!"));
 }
 
 #[test]
 fn test_chat_request_serialization() {
     let request = ChatRequest {
-        messages: vec![Message {
-            role: "user".to_string(),
-            content: "Test message".to_string(),
-        }],
+        messages: vec![Message::text(
+            "user".to_string(),
+            "Test message".to_string(),
+        )],
         model: Some("gpt-4".to_string()),
         temperature: Some(0.7),
         max_tokens: Some(1000),
@@ -102,10 +129,10 @@ fn test_chat_request_serialization() {
 #[test]
 fn test_chat_request_optional_fields() {
     let request = ChatRequest {
-        messages: vec![Message {
-            role: "user".to_string(),
-            content: "Test".to_string(),
-        }],
+        messages: vec![Message::text(
+            "user".to_string(),
+            "Test".to_string(),
+        )],
         model: None,
         temperature: None,
         max_tokens: None,

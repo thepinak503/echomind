@@ -12,6 +12,9 @@ pub enum Provider {
     Gemini,
     Claude,
     Ollama,
+    Grok,         // x.ai
+    Mistral,
+    Cohere,
     Custom(String),
 }
 
@@ -24,6 +27,9 @@ impl Provider {
             "gemini" | "google" => Ok(Provider::Gemini),
             "claude" | "anthropic" => Ok(Provider::Claude),
             "ollama" => Ok(Provider::Ollama),
+            "grok" | "xai" => Ok(Provider::Grok),
+            "mistral" => Ok(Provider::Mistral),
+            "cohere" => Ok(Provider::Cohere),
             _ => {
                 // If it looks like a URL, treat as custom endpoint
                 if s.starts_with("http://") || s.starts_with("https://") {
@@ -44,6 +50,9 @@ impl Provider {
             Provider::Gemini => "https://generativelanguage.googleapis.com/v1beta",
             Provider::Claude => "https://api.anthropic.com/v1/messages",
             Provider::Ollama => "http://localhost:11434/api/chat",
+            Provider::Grok => "https://api.x.ai/v1/chat/completions",
+            Provider::Mistral => "https://api.mistral.ai/v1/chat/completions",
+            Provider::Cohere => "https://api.cohere.ai/v1/chat",
             Provider::Custom(url) => url,
         }
     }
@@ -51,7 +60,7 @@ impl Provider {
     pub fn requires_api_key(&self) -> bool {
         matches!(
             self,
-            Provider::OpenAI | Provider::Claude | Provider::ChatAnywhere | Provider::Gemini
+            Provider::OpenAI | Provider::Claude | Provider::ChatAnywhere | Provider::Gemini | Provider::Grok | Provider::Mistral | Provider::Cohere
         )
     }
 
@@ -63,15 +72,62 @@ impl Provider {
             Provider::Gemini => "gemini",
             Provider::Claude => "claude",
             Provider::Ollama => "ollama",
+            Provider::Grok => "grok",
+            Provider::Mistral => "mistral",
+            Provider::Cohere => "cohere",
             Provider::Custom(_) => "custom",
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum MessageContent {
+    Text(String),
+    MultiModal(Vec<ContentPart>),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Message {
     pub role: String,
-    pub content: String,
+    pub content: MessageContent,
+}
+
+impl Message {
+    pub fn text(role: String, content: String) -> Self {
+        Self {
+            role,
+            content: MessageContent::Text(content),
+        }
+    }
+
+    pub fn multimodal(role: String, parts: Vec<ContentPart>) -> Self {
+        Self {
+            role,
+            content: MessageContent::MultiModal(parts),
+        }
+    }
+
+    pub fn get_text(&self) -> Option<&str> {
+        match &self.content {
+            MessageContent::Text(text) => Some(text),
+            MessageContent::MultiModal(_) => None,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(tag = "type")]
+pub enum ContentPart {
+    #[serde(rename = "text")]
+    Text { text: String },
+    #[serde(rename = "image_url")]
+    ImageUrl { image_url: ImageUrl },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ImageUrl {
+    pub url: String,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -140,6 +196,7 @@ impl ApiClient {
 
         let client = Client::builder()
             .timeout(Duration::from_secs(timeout))
+            .pool_max_idle_per_host(10) // Connection pooling
             .build()
             .map_err(|e| EchomindError::NetworkError(e.to_string()))?;
 
@@ -192,6 +249,37 @@ impl ApiClient {
 
     pub async fn send_message(&self, request: ChatRequest) -> Result<String> {
         match self.provider {
+            Provider::Cohere => {
+                let endpoint = self.provider.endpoint();
+
+                let cohere_req = CohereRequest::from_chat_request(&request);
+
+                let mut req_builder = self.client.post(endpoint).json(&cohere_req);
+
+                // Add authorization header if API key is available
+                if let Some(ref key) = self.api_key {
+                    req_builder = req_builder.header("Authorization", format!("Bearer {}", key));
+                }
+
+                let response = req_builder.send().await?;
+
+                // Check for API errors
+                if !response.status().is_success() {
+                    let status = response.status().as_u16();
+                    let error_text = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown error".to_string());
+                    return Err(EchomindError::ApiError {
+                        status,
+                        message: error_text,
+                    });
+                }
+
+                let cohere_response: CohereResponse = response.json().await?;
+
+                cohere_response.text.ok_or(EchomindError::EmptyResponse)
+            }
             Provider::Gemini => {
                 // Build Gemini URL with model and API key as query param
                 let model = request
@@ -264,7 +352,8 @@ impl ApiClient {
                 chat_response
                     .choices
                     .first()
-                    .map(|choice| choice.message.content.clone())
+                    .and_then(|choice| choice.message.get_text())
+                    .map(|s| s.to_string())
                     .ok_or(EchomindError::EmptyResponse)
             }
         }
@@ -278,8 +367,8 @@ impl ApiClient {
     where
         F: FnMut(&str),
     {
-        // Gemini does not use OpenAI-style SSE here; emulate streaming by a single callback
-        if let Provider::Gemini = self.provider {
+        // Cohere and Gemini do not use OpenAI-style SSE here; emulate streaming by a single callback
+        if matches!(self.provider, Provider::Gemini | Provider::Cohere) {
             let text = self.send_message(request).await?;
             callback(&text);
             return Ok(text);
@@ -340,6 +429,43 @@ impl ApiClient {
     }
 }
 
+// ===== Cohere types =====
+
+#[derive(Serialize, Debug)]
+struct CohereRequest {
+    message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temperature: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
+}
+
+impl CohereRequest {
+    fn from_chat_request(request: &ChatRequest) -> Self {
+        // For Cohere, we take the last user message as the message
+        let message = request.messages.iter()
+            .rev()
+            .find(|m| m.role == "user")
+            .and_then(|m| m.get_text())
+            .unwrap_or("")
+            .to_string();
+
+        CohereRequest {
+            message,
+            model: request.model.clone(),
+            temperature: request.temperature,
+            max_tokens: request.max_tokens,
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct CohereResponse {
+    text: Option<String>,
+}
+
 // ===== Gemini types =====
 
 #[derive(Serialize, Debug)]
@@ -382,7 +508,7 @@ impl GeminiRequest {
                     other => other.to_string(),
                 },
                 parts: vec![GeminiPart {
-                    text: m.content.clone(),
+                    text: m.get_text().unwrap_or("").to_string(),
                 }],
             })
             .collect();
