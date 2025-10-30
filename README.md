@@ -29,7 +29,6 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 | **Fedora** | Fedora 35+, RHEL 9+ | ✅ Fully Supported | dnf package manager |
 | **CentOS/RHEL** | CentOS 8+, RHEL 8+ | ✅ Fully Supported | yum/dnf supported |
 | **openSUSE** | Leap 15.3+, Tumbleweed | ✅ Fully Supported | zypper package manager |
-| **Alpine Linux** | Alpine 3.15+ | ✅ Fully Supported | apk package manager |
 | **Other Linux** | Any with Rust support | ✅ Supported | Manual installation |
 | **macOS** | macOS 10.15+ (Catalina+) | ✅ Fully Supported | Intel & Apple Silicon |
 | **Windows** | Windows 10 (1809+), 11 | ✅ Fully Supported | PowerShell 5.1+/Core 7+ |
@@ -63,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 - Fedora 35+, RHEL 9+ (dnf)
 - CentOS 8+, Rocky Linux, AlmaLinux (yum/dnf)
 - openSUSE Leap 15.3+, Tumbleweed (zypper)
-**Arch Linux / Manjaro: (AUR)**
+**(AUR)**
 ```bash
 yay -S echomind
 ```
