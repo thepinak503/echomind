@@ -66,65 +66,18 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 ```bash
 yay -S echomind
 ```
-
 OR
 ```bash
 git clone https://github.com/thepinak503/echomind.git
 cd echomind
 makepkg -si
 ```
-
-**Debian / Ubuntu (20.04, 22.04, 24.04):**
+or
+**Using Cargo (if Rust is installed):**
 ```bash
-# Install build dependencies
-sudo apt install -y debhelper cargo rustc libssl-dev pkg-config git
-
-# Build and install .deb package
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-dpkg-buildpackage -us -uc -b
-sudo dpkg -i ../echomind_0.3.0-1_amd64.deb
+cargo install --git https://github.com/thepinak503/echomind
 ```
 
-**Fedora / RHEL 9+:**
-```bash
-# Install dependencies
-sudo dnf install -y cargo rust openssl-devel pkg-config git
-
-# Clone and build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-sudo install target/release/echomind /usr/local/bin/
-```
-
-**CentOS / RHEL 8:**
-```bash
-# Install dependencies
-sudo yum install -y cargo rust openssl-devel pkgconfig git
-
-# Clone and build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-sudo install target/release/echomind /usr/local/bin/
-```
-
-**openSUSE:**
-```bash
-# Install dependencies
-sudo zypper install -y cargo rust libopenssl-devel pkg-config git
-
-# Clone and build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-sudo install target/release/echomind /usr/local/bin/
-```
-**Universal (any Linux distro):**
-```bash
-curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
-```
 
 #### 🍎 macOS
 
@@ -150,16 +103,6 @@ curl -L https://github.com/thepinak503/echomind/raw/master/echomind-windows-x86_
 
 # Move to a directory in PATH (e.g., C:\Windows\System32)
 Move-Item echomind.exe C:\Windows\System32\echomind.exe
-```
-
-**Alternative: Automated Installation Script:**
-```powershell
-irm -useb https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex
-```
-
-**Using Cargo (if Rust is installed):**
-```powershell
-cargo install --git https://github.com/thepinak503/echomind
 ```
 
 **WSL (Windows Subsystem for Linux):**
