@@ -44,6 +44,7 @@ struct CohereResponse {
 // ===== Gemini types =====
 
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 struct GeminiRequest {
     contents: Vec<GeminiContent>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -51,6 +52,7 @@ struct GeminiRequest {
 }
 
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 struct GeminiGenerationConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     max_output_tokens: Option<u32>,
@@ -59,16 +61,19 @@ struct GeminiGenerationConfig {
 }
 
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 struct GeminiContent {
     role: String,
     parts: Vec<GeminiPart>,
 }
 
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 struct GeminiPart {
     text: String,
 }
 
+#[allow(dead_code)]
 impl GeminiRequest {
     fn from_messages(
         messages: &[Message],
@@ -341,16 +346,6 @@ impl ApiClient {
             // Try to get from environment
             let env_key = std::env::var("ECHOMIND_API_KEY").ok();
             if env_key.is_none() {
-                let key_url = match provider {
-                    Provider::OpenAI => "https://platform.openai.com/api-keys",
-                    Provider::Claude => "https://console.anthropic.com/",
-                    Provider::Gemini => "https://aistudio.google.com/app/api-keys",
-                    Provider::Grok => "https://console.x.ai/",
-                    Provider::Mistral => "https://console.mistral.ai/",
-                    Provider::Cohere => "https://dashboard.cohere.ai/api-keys",
-                    Provider::ChatAnywhere => "https://api.chatanywhere.tech",
-                    _ => "provider's website",
-                };
                 return Err(EchomindError::MissingApiKey(provider.name().to_string()));
             }
         }
