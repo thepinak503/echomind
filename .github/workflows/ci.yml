@@ -52,7 +52,6 @@ jobs:
 
     - name: Run clippy
       run: cargo clippy -- -D warnings
-      if: matrix.os == 'ubuntu-latest'
 
   fmt:
     name: Format
