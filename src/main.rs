@@ -4,7 +4,7 @@ mod config;
 mod error;
 mod repl;
 
-use api::{ApiClient, ChatRequest, Message, Provider, ContentPart, ImageUrl, MessageContent};
+use api::{ApiClient, ChatRequest, Message, Provider, ContentPart, ImageUrl};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
 use clap::Parser;
@@ -40,35 +40,41 @@ async fn main() {
 async fn run() -> Result<()> {
     let args = Args::parse();
 
-    // Handle special flags first
     if args.init_config {
-        Config::init_default_config()?;
-        return Ok(());
+        return Config::init_default_config();
     }
 
     if args.show_config {
         let config_path = Config::config_path()?;
-        println!("Configuration file: {}", config_path.display());
-        if config_path.exists() {
-            println!("\nCurrent configuration:");
-            let contents = fs::read_to_string(&config_path)
-                .map_err(|e| EchomindError::FileError(e.to_string()))?;
-            println!("{}", contents);
-        } else {
-            println!(
-                "{}",
-                "Configuration file does not exist. Use --init-config to create it.".yellow()
-            );
-        }
+        println!("Config file path: {}", config_path.display());
         return Ok(());
     }
 
-    // Load configuration
     let config = Config::load()?;
+
+    let mut initial_messages: Vec<Message> = Vec::new();
+    let mut system_prompt: Option<String> = args.system.clone();
+
+    if let Some(preset_name) = args.preset.clone() {
+        if let Some(preset) = config.presets.get(&preset_name) {
+            if let Some(p_system_prompt) = &preset.system_prompt {
+                system_prompt = Some(p_system_prompt.clone());
+            }
+            if let Some(p_messages) = &preset.messages {
+                initial_messages.extend(p_messages.clone());
+            }
+        } else {
+            return Err(EchomindError::ConfigError(format!("Preset '{}' not found in config.", preset_name)));
+        }
+    }
 
     // Check if we're in interactive mode
     if args.interactive {
-        return run_interactive(args, config).await;
+        return run_interactive(args, config, initial_messages, system_prompt).await;
+    }
+
+    if let Some(batch_file) = &args.batch {
+        return run_batch_queries(batch_file, args.clone(), config, initial_messages, system_prompt).await;
     }
 
     // Check for model comparison mode
@@ -87,7 +93,7 @@ async fn run() -> Result<()> {
             input
         };
 
-        return compare_models(&input, models_str, &args, &config).await;
+        return compare_models(&input, models_str, &args, &config, system_prompt).await;
     }
 
     // Read input: from clipboard, stdin, or show help
@@ -142,10 +148,44 @@ async fn run() -> Result<()> {
         }
     };
 
-    run_single_query(args, config, input).await
+    run_single_query(args, config, input, initial_messages, system_prompt).await
 }
 
-async fn run_single_query(args: Args, config: Config, input: String) -> Result<()> {
+async fn run_batch_queries(
+    batch_file: &str,
+    args: Args,
+    config: Config,
+    initial_messages: Vec<Message>,
+    system_prompt: Option<String>,
+) -> Result<()> {
+    let contents = fs::read_to_string(batch_file)
+        .map_err(|e| EchomindError::FileError(format!("Failed to read batch file: {}", e)))?;
+
+    for (i, line) in contents.lines().enumerate() {
+        let query = line.trim();
+        if query.is_empty() || query.starts_with("#") {
+            continue; // Skip empty lines and comments
+        }
+
+        println!("{}\n{}", "─".repeat(80).bright_black(), format!("Batch Query {}: {}", i + 1, query).cyan().bold());
+        println!("{}", "─".repeat(80).bright_black());
+
+        // Clone args and config for each query to avoid ownership issues
+        run_single_query(
+            args.clone(),
+            config.clone(),
+            query.to_string(),
+            initial_messages.clone(),
+            system_prompt.clone(),
+        ).await?;
+
+        println!(); // Add a newline for separation between responses
+    }
+
+    Ok(())
+}
+
+async fn run_single_query(args: Args, config: Config, input: String, messages: Vec<Message>, system_prompt: Option<String>) -> Result<()> {
     let (coder, output) = args.resolve_coder_and_output();
 
     // Determine provider and fallback chain
@@ -191,7 +231,7 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     };
 
     // Build messages
-    let mut messages = Vec::new();
+    let mut messages = messages;
 
     // Load history if specified
     if let Some(history_file) = &args.history {
@@ -200,8 +240,8 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     }
 
     // Add system message if in coder mode or custom system prompt
-    if let Some(system_prompt) = args.system {
-        messages.push(Message::text("system".to_string(), system_prompt));
+    if let Some(s_prompt) = system_prompt {
+        messages.push(Message::text("system".to_string(), s_prompt));
     } else if coder {
         messages.push(Message::text(
             "system".to_string(),
@@ -361,7 +401,7 @@ async fn run_single_query(args: Args, config: Config, input: String) -> Result<(
     Ok(())
 }
 
-async fn run_interactive(args: Args, config: Config) -> Result<()> {
+async fn run_interactive(args: Args, config: Config, initial_messages: Vec<Message>, system_prompt: Option<String>) -> Result<()> {
     // Determine provider
     let provider_str = args.provider.as_ref().unwrap_or(&config.api.provider);
     let provider = Provider::from_string(provider_str)?;
@@ -383,6 +423,8 @@ async fn run_interactive(args: Args, config: Config) -> Result<()> {
         args.max_tokens,
         args.model,
         args.stream,
+        initial_messages,
+        system_prompt,
     );
 
     repl.run().await
@@ -487,7 +529,7 @@ fn format_output(content: &str, format_str: &str, provider: &str, model: &str) -
 }
 
 // Compare responses from multiple models
-async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Config) -> Result<()> {
+async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Config, system_prompt: Option<String>) -> Result<()> {
     let models: Vec<&str> = models_str.split(',').map(|s| s.trim()).collect();
 
     if models.is_empty() {
@@ -529,7 +571,11 @@ async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Con
 
         let client = ApiClient::new(provider, api_key, timeout)?;
 
-        let messages = vec![Message::text("user".to_string(), input.to_string())];
+        let mut messages = Vec::new();
+        if let Some(s_prompt) = system_prompt.clone() {
+            messages.push(Message::text("system".to_string(), s_prompt));
+        }
+        messages.push(Message::text("user".to_string(), input.to_string()));
 
         let request = ChatRequest {
             messages,

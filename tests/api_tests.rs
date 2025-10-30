@@ -1,4 +1,5 @@
-use echomind::api::{ChatRequest, Message, Provider};
+use echomind::api::{ApiClient, ChatRequest, Message, Provider};
+use echomind::error::EchomindError;
 
 #[test]
 fn test_provider_from_string() {
@@ -144,4 +145,15 @@ fn test_chat_request_optional_fields() {
     assert!(!json.contains("\"model\""));
     assert!(!json.contains("\"temperature\""));
     assert!(!json.contains("\"max_tokens\""));
+}
+
+#[tokio::test]
+async fn test_missing_api_key_error() {
+    let provider = Provider::OpenAI;
+    let api_key = None;
+    let timeout = 30;
+
+    let result = ApiClient::new(provider, api_key, timeout);
+    assert!(result.is_err());
+    assert!(matches!(result.unwrap_err(), EchomindError::MissingApiKey(_)));
 }

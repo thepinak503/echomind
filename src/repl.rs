@@ -22,10 +22,19 @@ impl Repl {
         max_tokens: Option<u32>,
         model: Option<String>,
         stream: bool,
+        initial_messages: Vec<Message>,
+        system_prompt: Option<String>,
     ) -> Self {
+        let mut conversation = Vec::new();
+
+        if let Some(s_prompt) = system_prompt {
+            conversation.push(Message::text("system".to_string(), s_prompt));
+        }
+        conversation.extend(initial_messages);
+
         Self {
             client,
-            conversation: Vec::new(),
+            conversation,
             temperature: temperature.unwrap_or(config.defaults.temperature),
             max_tokens: max_tokens.or(config.defaults.max_tokens),
             model: model.unwrap_or(config.api.model.clone()),

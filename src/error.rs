@@ -8,8 +8,8 @@ pub enum EchomindError {
     #[error("Network error: {0}. Please check your internet connection.")]
     NetworkError(String),
 
-    #[error("API request failed with status {status}: {message}")]
-    ApiError { status: u16, message: String },
+    #[error("API request failed with status {status}: {message}. {suggestion}")]
+    ApiError { status: u16, message: String, suggestion: String },
 
     #[error("Request timed out after {0} seconds. The API might be slow or unavailable.")]
     TimeoutError(u64),
@@ -20,7 +20,7 @@ pub enum EchomindError {
     #[error("Configuration error: {0}")]
     ConfigError(String),
 
-    #[error("Invalid API provider: {0}. Supported providers: chat, chatanywhere, openai, claude, ollama")]
+    #[error("Invalid API provider: '{0}'. Supported providers: chat, chatanywhere, openai, claude, gemini, ollama, grok, mistral, cohere, or a custom URL. Check your config or use --provider option.")]
     InvalidProvider(String),
 
     #[error("API key required for provider '{0}'. Set it in config or use ECHOMIND_API_KEY environment variable.")]
@@ -46,6 +46,7 @@ impl From<reqwest::Error> for EchomindError {
             EchomindError::ApiError {
                 status: status.as_u16(),
                 message: err.to_string(),
+                suggestion: "Check the API documentation for this status code.".to_string(),
             }
         } else {
             EchomindError::NetworkError(err.to_string())

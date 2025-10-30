@@ -2,6 +2,7 @@ use crate::error::{EchomindError, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -10,6 +11,15 @@ pub struct Config {
 
     #[serde(default)]
     pub defaults: Defaults,
+
+    #[serde(default)]
+    pub presets: std::collections::HashMap<String, Preset>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Preset {
+    pub system_prompt: Option<String>,
+    pub messages: Option<Vec<crate::api::Message>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -96,6 +106,7 @@ impl Default for Config {
         Self {
             api: ApiConfig::default(),
             defaults: Defaults::default(),
+            presets: HashMap::new(),
         }
     }
 }

@@ -1,6 +1,6 @@
 use clap::Parser;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(name = "echomind")]
 #[command(version)]
 #[command(about = "Send piped input to AI chat API and print response")]
@@ -103,6 +103,14 @@ pub struct Args {
     /// Optional prompt to append to input (useful when piping)
     #[arg(value_name = "PROMPT")]
     pub prompt: Option<String>,
+
+    /// Use a predefined conversation preset from the config file
+    #[arg(long)]
+    pub preset: Option<String>,
+
+    /// Process multiple queries from a file, one per line
+    #[arg(long)]
+    pub batch: Option<String>,
 }
 
 impl Args {

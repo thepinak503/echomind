@@ -27,6 +27,7 @@ fn test_config_serialization() {
             coder_mode: true,
             stream: false,
         },
+        presets: std::collections::HashMap::new(),
     };
 
     let toml_str = toml::to_string(&config).unwrap();
