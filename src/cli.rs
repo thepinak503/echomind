@@ -111,6 +111,150 @@ pub struct Args {
     /// Process multiple queries from a file, one per line
     #[arg(long)]
     pub batch: Option<String>,
+
+    // Voice features
+    /// Enable voice input from microphone
+    #[arg(long)]
+    pub voice_input: bool,
+
+    /// Convert AI response to speech
+    #[arg(long)]
+    pub voice_output: bool,
+
+    /// Voice to use for text-to-speech
+    #[arg(long)]
+    pub voice: Option<String>,
+
+    // History management
+    /// Search through conversation history
+    #[arg(long)]
+    pub search_history: Option<String>,
+
+    /// Export history to format (json, csv, markdown)
+    #[arg(long)]
+    pub export_history: Option<String>,
+
+    /// Show history statistics
+    #[arg(long)]
+    pub history_stats: bool,
+
+    /// Merge multiple history files
+    #[arg(long)]
+    pub merge_history: Option<Vec<String>>,
+
+    // Multimodal features
+    /// Capture image from webcam
+    #[arg(long)]
+    pub webcam: bool,
+
+    /// Take screenshot
+    #[arg(long)]
+    pub screenshot: bool,
+
+    /// Process PDF file
+    #[arg(long)]
+    pub pdf: Option<String>,
+
+    /// Process Office document
+    #[arg(long)]
+    pub document: Option<String>,
+
+    /// Process batch images from directory
+    #[arg(long)]
+    pub batch_images: Option<String>,
+
+    // Workflow features
+    /// Execute workflow from file
+    #[arg(long)]
+    pub workflow: Option<String>,
+
+    /// List available workflows
+    #[arg(long)]
+    pub list_workflows: bool,
+
+    // Collaboration features
+    /// Share conversation
+    #[arg(long)]
+    pub share: bool,
+
+    /// Start collaboration session
+    #[arg(long)]
+    pub collaborate: bool,
+
+    // Security features
+    /// Encrypt conversation
+    #[arg(long)]
+    pub encrypt: bool,
+
+    /// Local-only mode (no network)
+    #[arg(long)]
+    pub local_only: bool,
+
+    /// Enable audit logging
+    #[arg(long)]
+    pub audit_log: bool,
+
+    // Performance features
+    /// Benchmark model performance
+    #[arg(long)]
+    pub benchmark: bool,
+
+    /// Compare model performance
+    #[arg(long)]
+    pub benchmark_compare: Option<Vec<String>>,
+
+    // Developer tools
+    /// Enable debug mode
+    #[arg(long)]
+    pub debug: bool,
+
+    /// Enable test mode with mock responses
+    #[arg(long)]
+    pub test_mode: bool,
+
+    // Content management
+    /// Use template
+    #[arg(long)]
+    pub template: Option<String>,
+
+    /// Use snippet
+    #[arg(long)]
+    pub snippet: Option<String>,
+
+    /// List available snippets
+    #[arg(long)]
+    pub list_snippets: bool,
+
+    // Data processing
+    /// Process CSV file
+    #[arg(long)]
+    pub csv: Option<String>,
+
+    /// Process JSON file
+    #[arg(long)]
+    pub json_file: Option<String>,
+
+    /// Process Excel file
+    #[arg(long)]
+    pub excel: Option<String>,
+
+    // Scheduling
+    /// Schedule task for later execution
+    #[arg(long)]
+    pub schedule: Option<String>,
+
+    // Quality assurance
+    /// Enable response quality scoring
+    #[arg(long)]
+    pub quality_score: bool,
+
+    /// Enable fact-checking
+    #[arg(long)]
+    pub fact_check: bool,
+
+    /// Enable bias detection
+    #[arg(long)]
+    pub bias_detect: bool,
 }
 
 impl Args {
