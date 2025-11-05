@@ -76,6 +76,14 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 
 ## 📦 Installation
 
+### Install with Cargo (Recommended)
+
+If you have Rust installed:
+
+```bash
+cargo install --git https://github.com/thepinak503/echomind.git
+```
+
 ### 🚀 Quick Install (Universal)
 
 **One-liner for Linux/macOS:**
