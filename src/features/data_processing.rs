@@ -1,9 +1,10 @@
 use crate::error::{EchomindError, Result};
+use calamine::Reader;
 use csv::{ReaderBuilder, WriterBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataAnalysis {
@@ -161,7 +162,7 @@ impl DataProcessor {
                 (records, keys)
             }
             serde_json::Value::Object(obj) => {
-                let record = obj.into_iter().collect();
+                let record: std::collections::HashMap<String, serde_json::Value> = obj.into_iter().collect();
                 let keys = record.keys().cloned().collect();
                 (vec![record], keys)
             }
@@ -218,7 +219,7 @@ impl DataProcessor {
         }
 
         let mut excel_data: Vec<Vec<String>> = Vec::new();
-        let mut workbook = calamine::open_workbook(file_path)
+        let mut workbook: calamine::Sheets<std::io::BufReader<std::fs::File>> = calamine::open_workbook(file_path)
             .map_err(|e| EchomindError::Other(format!("Failed to open Excel file: {}", e)))?;
         
         if let Some(Ok(range)) = workbook.worksheet_range_at(0) {
@@ -465,7 +466,7 @@ impl DataProcessor {
         let most_common = if !unique_values.is_empty() {
             let mut counts: HashMap<&serde_json::Value, usize> = HashMap::new();
             for value in &unique_values {
-                let count = values.iter().filter(|v| v == value).count();
+                let count = values.iter().filter(|v| *v == value).count();
                 counts.insert(value, count);
             }
             
@@ -556,7 +557,7 @@ impl DataProcessor {
         Ok(filtered)
     }
 
-    fn generate_bar_chart(&self, analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
+    fn generate_bar_chart(&self, _analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
         // Simplified bar chart generation
         Ok(format!(
             r#"<div style="width: {}px; height: {}px;">
@@ -573,7 +574,7 @@ impl DataProcessor {
         ))
     }
 
-    fn generate_line_chart(&self, analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
+    fn generate_line_chart(&self, _analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
         Ok(format!(
             r#"<div style="width: {}px; height: {}px;">
                 <h3>{}</h3>
@@ -589,7 +590,7 @@ impl DataProcessor {
         ))
     }
 
-    fn generate_scatter_chart(&self, analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
+    fn generate_scatter_chart(&self, _analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
         Ok(format!(
             r#"<div style="width: {}px; height: {}px;">
                 <h3>{}</h3>
@@ -606,7 +607,7 @@ impl DataProcessor {
         ))
     }
 
-    fn generate_pie_chart(&self, analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
+    fn generate_pie_chart(&self, _analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
         Ok(format!(
             r#"<div style="width: {}px; height: {}px;">
                 <h3>{}</h3>
@@ -622,7 +623,7 @@ impl DataProcessor {
         ))
     }
 
-    fn generate_histogram(&self, analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
+    fn generate_histogram(&self, _analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
         Ok(format!(
             r#"<div style="width: {}px; height: {}px;">
                 <h3>{}</h3>
@@ -638,7 +639,7 @@ impl DataProcessor {
         ))
     }
 
-    fn generate_heatmap(&self, analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
+    fn generate_heatmap(&self, _analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
         Ok(format!(
             r#"<div style="width: {}px; height: {}px;">
                 <h3>{}</h3>

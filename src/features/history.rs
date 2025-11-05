@@ -1,6 +1,6 @@
 use crate::api::Message;
 use crate::error::{EchomindError, Result};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -221,8 +221,8 @@ impl HistoryManager {
             total_tokens: 0,
             total_cost: 0.0,
             average_response_time: 0.0,
-            most_used_models: HashMap::new(),
-            most_used_providers: HashMap::new(),
+            most_used_models: Vec::new(),
+            most_used_providers: Vec::new(),
             activity_by_day: HashMap::new(),
             activity_by_hour: HashMap::new(),
         };

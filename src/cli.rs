@@ -5,7 +5,7 @@ use clap::Parser;
 #[command(version)]
 #[command(about = "Send piped input to AI chat API and print response")]
 #[command(
-    long_about = "A lightweight, fast command-line tool that pipes input to an AI chat API and outputs the response.
+    long_about = "A powerful, cross-platform AI-powered CLI tool with extensive features for integrating AI assistance into your workflow.
 
 Examples:
   echo 'Hello, how are you?' | echomind
@@ -13,7 +13,21 @@ Examples:
   echo 'write a Python function' | echomind --coder --output code.py
   echomind --interactive
   echomind --init-config
-  echo 'explain quantum computing' | echomind --provider openai --model gpt-4"
+  echo 'explain quantum computing' | echomind --provider openai --model gpt-4
+
+Features:
+  • Multiple AI providers (OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, ChatAnywhere, ch.at)
+  • Interactive REPL mode with conversation history
+  • Streaming responses in real-time
+  • Multimodal support (images, PDFs, documents)
+  • Voice input/output capabilities
+  • Batch processing from files
+  • Model comparison and benchmarking
+  • Clipboard integration
+  • Custom output formatting (JSON, templates)
+  • Conversation presets and templates
+  • Cross-platform: Linux, macOS, Windows, WSL
+  • Performance optimized with async I/O and caching"
 )]
 pub struct Args {
     /// Enable coder mode (generates clean code without explanations)

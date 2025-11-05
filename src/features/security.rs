@@ -1,10 +1,11 @@
 use crate::error::{EchomindError, Result};
+use base64::Engine;
 use ring::aead::{AES_256_GCM, LessSafeKey, Nonce, UnboundKey, Aad};
 use ring::rand::{SecureRandom, SystemRandom};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditLogEntry {
@@ -72,16 +73,16 @@ impl SecurityManager {
         let nonce = Nonce::assume_unique_for_key(nonce_bytes);
         
         let mut in_out = data.as_bytes().to_vec();
-        let mut tag = [0u8; 16];
+
         
-        less_safe_key.seal_in_place_separate_tag(nonce, Aad::empty(), &mut in_out, &mut tag)
+        let tag = less_safe_key.seal_in_place_separate_tag(nonce, Aad::empty(), &mut in_out)
             .map_err(|e| EchomindError::Other(format!("Encryption failed: {}", e)))?;
         
         let mut encrypted = nonce_bytes.to_vec();
-        encrypted.extend_from_slice(&tag);
+        encrypted.extend_from_slice(tag.as_ref());
         encrypted.extend_from_slice(&in_out);
         
-        Ok(base64::encode(encrypted))
+        Ok(base64::engine::general_purpose::STANDARD.encode(encrypted))
     }
 
     pub fn decrypt_data(&self, encrypted_data: &str) -> Result<String> {
@@ -92,7 +93,7 @@ impl SecurityManager {
             .map_err(|e| EchomindError::Other(format!("Failed to create encryption key: {}", e)))?;
         let less_safe_key = LessSafeKey::new(unbound_key);
         
-        let decoded = base64::decode(encrypted_data)
+        let decoded = base64::engine::general_purpose::STANDARD.decode(encrypted_data)
             .map_err(|e| EchomindError::Other(format!("Failed to decode encrypted data: {}", e)))?;
         
         if decoded.len() < 28 {
@@ -102,20 +103,20 @@ impl SecurityManager {
         let nonce_bytes = &decoded[..12];
         let tag = &decoded[12..28];
         let ciphertext = &decoded[28..];
-        
+
         let nonce = Nonce::assume_unique_for_key(
             nonce_bytes.try_into()
                 .map_err(|_| EchomindError::Other("Invalid nonce".to_string()))?
         );
-        
-        let mut in_out = ciphertext.to_vec();
-        let tag_slice = tag.try_into()
-            .map_err(|_| EchomindError::Other("Invalid tag".to_string()))?;
-        
-        less_safe_key.open_in_place(nonce, Aad::empty(), &mut in_out, tag_slice)
+
+        let mut in_out = Vec::new();
+        in_out.extend_from_slice(ciphertext);
+        in_out.extend_from_slice(tag);
+
+        let plaintext = less_safe_key.open_in_place(nonce, Aad::empty(), &mut in_out)
             .map_err(|e| EchomindError::Other(format!("Decryption failed: {}", e)))?;
-        
-        String::from_utf8(in_out)
+
+        String::from_utf8(plaintext.to_vec())
             .map_err(|e| EchomindError::Other(format!("Failed to convert decrypted data to string: {}", e)))
     }
 

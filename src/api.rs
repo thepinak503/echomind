@@ -1,198 +1,40 @@
 use crate::error::{EchomindError, Result};
 use futures::StreamExt;
+use lru::LruCache;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::num::NonZeroUsize;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
-// ===== Cohere types =====
-
-#[derive(Serialize, Debug)]
-struct CohereRequest {
-    message: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    model: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    temperature: Option<f32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    max_tokens: Option<u32>,
-}
-
-impl CohereRequest {
-    fn from_chat_request(request: &ChatRequest) -> Self {
-        // For Cohere, we take the last user message as the message
-        let message = request.messages.iter()
-            .rev()
-            .find(|m| m.role == "user")
-            .and_then(|m| m.get_text())
-            .unwrap_or("")
-            .to_string();
-
-        CohereRequest {
-            message,
-            model: request.model.clone(),
-            temperature: request.temperature,
-            max_tokens: request.max_tokens,
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-struct CohereResponse {
-    text: Option<String>,
-}
-
-// ===== Gemini types =====
-
-#[derive(Serialize, Debug)]
-#[allow(dead_code)]
-struct GeminiRequest {
-    contents: Vec<GeminiContent>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    generation_config: Option<GeminiGenerationConfig>,
-}
-
-#[derive(Serialize, Debug)]
-#[allow(dead_code)]
-struct GeminiGenerationConfig {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    max_output_tokens: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    temperature: Option<f32>,
-}
-
-#[derive(Serialize, Debug)]
-#[allow(dead_code)]
-struct GeminiContent {
-    role: String,
-    parts: Vec<GeminiPart>,
-}
-
-#[derive(Serialize, Debug)]
-#[allow(dead_code)]
-struct GeminiPart {
-    text: String,
-}
-
-#[allow(dead_code)]
-impl GeminiRequest {
-    fn from_messages(
-        messages: &[Message],
-        temperature: Option<f32>,
-        max_tokens: Option<u32>,
-    ) -> Self {
-        let contents = messages
-            .iter()
-            .map(|m| GeminiContent {
-                role: match m.role.as_str() {
-                    "system" => "user".to_string(), // map system to user for simplicity
-                    other => other.to_string(),
-                },
-                parts: vec![GeminiPart {
-                    text: m.get_text().unwrap_or("").to_string(),
-                }],
-            })
-            .collect();
-
-        let generation_config = if temperature.is_some() || max_tokens.is_some() {
-            Some(GeminiGenerationConfig {
-                max_output_tokens: max_tokens,
-                temperature,
-            })
-        } else {
-            None
-        };
-
-        GeminiRequest {
-            contents,
-            generation_config,
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-struct GeminiResponseCandidate {
-    content: Option<GeminiContentOut>,
-}
-
-#[derive(Deserialize, Debug)]
-struct GeminiContentOut {
-    parts: Option<Vec<GeminiPartOut>>,
-}
-
-#[derive(Deserialize, Debug)]
-struct GeminiPartOut {
-    text: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-struct GeminiResponse {
-    candidates: Option<Vec<GeminiResponseCandidate>>,
-}
-
-impl GeminiResponse {
-    fn first_text(self) -> Option<String> {
-        self.candidates
-            .and_then(|mut c| c.pop())
-            .and_then(|cand| cand.content)
-            .and_then(|c| c.parts)
-            .and_then(|p| p.into_iter().find_map(|part| part.text))
-    }
-}
-
-#[derive(Deserialize, Debug)]
-#[allow(dead_code)]
-pub struct GeminiModelList {
-    pub models: Option<Vec<GeminiModel>>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-#[allow(dead_code)]
-pub struct GeminiModel {
-    pub name: Option<String>,
-    #[serde(default)]
-    pub display_name: Option<String>,
-    #[serde(default)]
-    pub description: Option<String>,
-    #[serde(default)]
-    pub input_token_limit: Option<u32>,
-    #[serde(default)]
-    pub output_token_limit: Option<u32>,
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Provider {
-    Chat,         // ch.at
-    ChatAnywhere, // chatanywhere.tech
+    Chat,
+    ChatAnywhere,
     OpenAI,
-    Gemini,
     Claude,
     Ollama,
-    Grok,         // x.ai
+    Grok,
     Mistral,
     Cohere,
+    Gemini,
     Custom(String),
 }
 
 impl Provider {
     pub fn from_string(s: &str) -> Result<Self> {
         match s.to_lowercase().as_str() {
-            "chat" | "ch.at" => Ok(Provider::Chat),
-            "chatanywhere" | "chat-anywhere" => Ok(Provider::ChatAnywhere),
+            "chat" => Ok(Provider::Chat),
+            "chatanywhere" => Ok(Provider::ChatAnywhere),
             "openai" => Ok(Provider::OpenAI),
-            "gemini" | "google" => Ok(Provider::Gemini),
-            "claude" | "anthropic" => Ok(Provider::Claude),
+            "claude" => Ok(Provider::Claude),
             "ollama" => Ok(Provider::Ollama),
-            "grok" | "xai" => Ok(Provider::Grok),
+            "grok" => Ok(Provider::Grok),
             "mistral" => Ok(Provider::Mistral),
             "cohere" => Ok(Provider::Cohere),
-            _ => {
-                // If it looks like a URL, treat as custom endpoint
-                if s.starts_with("http://") || s.starts_with("https://") {
-                    Ok(Provider::Custom(s.to_string()))
-                } else {
-                    Err(EchomindError::InvalidProvider(s.to_string()))
-                }
-            }
+            "gemini" => Ok(Provider::Gemini),
+            s if s.starts_with("http") => Ok(Provider::Custom(s.to_string())),
+            _ => Err(EchomindError::Other(format!("Unknown provider: {}", s))),
         }
     }
 
@@ -201,22 +43,18 @@ impl Provider {
             Provider::Chat => "https://ch.at/v1/chat/completions",
             Provider::ChatAnywhere => "https://api.chatanywhere.tech/v1/chat/completions",
             Provider::OpenAI => "https://api.openai.com/v1/chat/completions",
-            // Gemini's endpoint depends on the model; use base here and construct per request
-            Provider::Gemini => "https://generativelanguage.googleapis.com/v1beta",
             Provider::Claude => "https://api.anthropic.com/v1/messages",
             Provider::Ollama => "http://localhost:11434/api/chat",
             Provider::Grok => "https://api.x.ai/v1/chat/completions",
             Provider::Mistral => "https://api.mistral.ai/v1/chat/completions",
             Provider::Cohere => "https://api.cohere.ai/v1/chat",
+            Provider::Gemini => "https://generativelanguage.googleapis.com/v1beta/models",
             Provider::Custom(url) => url,
         }
     }
 
     pub fn requires_api_key(&self) -> bool {
-        matches!(
-            self,
-            Provider::OpenAI | Provider::Claude | Provider::ChatAnywhere | Provider::Gemini | Provider::Grok | Provider::Mistral | Provider::Cohere
-        )
+        !matches!(self, Provider::Chat | Provider::Ollama)
     }
 
     pub fn name(&self) -> &str {
@@ -224,13 +62,121 @@ impl Provider {
             Provider::Chat => "chat",
             Provider::ChatAnywhere => "chatanywhere",
             Provider::OpenAI => "openai",
-            Provider::Gemini => "gemini",
             Provider::Claude => "claude",
             Provider::Ollama => "ollama",
             Provider::Grok => "grok",
             Provider::Mistral => "mistral",
             Provider::Cohere => "cohere",
+            Provider::Gemini => "gemini",
             Provider::Custom(_) => "custom",
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GeminiModel {
+    #[allow(dead_code)]
+    pub name: String,
+    #[allow(dead_code)]
+    pub description: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GeminiModelList {
+    pub models: Vec<GeminiModel>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CohereRequest {
+    pub message: String,
+    pub model: String,
+    pub temperature: f32,
+    pub max_tokens: Option<u32>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CohereResponse {
+    pub text: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GeminiRequest {
+    pub contents: Vec<GeminiContent>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GeminiContent {
+    pub parts: Vec<GeminiPart>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GeminiPart {
+    pub text: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GeminiResponse {
+    pub candidates: Vec<GeminiCandidate>,
+}
+
+impl GeminiResponse {
+    pub fn first_text(&self) -> Result<String> {
+        self.candidates.first()
+            .and_then(|c| c.content.parts.first())
+            .map(|p| p.text.clone())
+            .ok_or(EchomindError::EmptyResponse)
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GeminiCandidate {
+    pub content: GeminiContent,
+}
+
+impl CohereRequest {
+    pub fn from_chat_request(request: &ChatRequest) -> Self {
+        Self {
+            message: request.messages.last().map(|m| m.content.to_string()).unwrap_or_default(),
+            model: request.model.clone().unwrap_or_else(|| "command".to_string()),
+            temperature: request.temperature.unwrap_or(0.7),
+            max_tokens: request.max_tokens,
+        }
+    }
+}
+
+impl GeminiRequest {
+    pub fn from_chat_request(request: &ChatRequest) -> Result<Self> {
+        let parts = request.messages.iter().map(|m| GeminiPart {
+            text: m.content.to_string(),
+        }).collect();
+
+        Ok(Self {
+            contents: vec![GeminiContent { parts }],
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+struct CacheEntry {
+    response: String,
+    timestamp: Instant,
+    ttl: Duration,
+}
+
+impl CacheEntry {
+    fn is_expired(&self) -> bool {
+        self.timestamp.elapsed() > self.ttl
+    }
+}
+
+impl Clone for ApiClient {
+    fn clone(&self) -> Self {
+        Self {
+            client: Arc::clone(&self.client),
+            provider: self.provider.clone(),
+            api_key: self.api_key.clone(),
+            timeout: self.timeout,
+            cache: Arc::clone(&self.cache),
         }
     }
 }
@@ -240,6 +186,20 @@ impl Provider {
 pub enum MessageContent {
     Text(String),
     MultiModal(Vec<ContentPart>),
+}
+
+impl std::fmt::Display for MessageContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MessageContent::Text(text) => write!(f, "{}", text),
+            MessageContent::MultiModal(parts) => {
+                for part in parts {
+                    write!(f, "{}", part)?;
+                }
+                Ok(())
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -278,6 +238,15 @@ pub enum ContentPart {
     Text { text: String },
     #[serde(rename = "image_url")]
     ImageUrl { image_url: ImageUrl },
+}
+
+impl std::fmt::Display for ContentPart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ContentPart::Text { text } => write!(f, "{}", text),
+            ContentPart::ImageUrl { image_url } => write!(f, "[Image: {}]", image_url.url),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -332,11 +301,12 @@ pub struct Delta {
 
 #[derive(Debug)]
 pub struct ApiClient {
-    client: Client,
+    client: Arc<Client>,
     provider: Provider,
     api_key: Option<String>,
     #[allow(dead_code)]
     timeout: Duration,
+    cache: Arc<Mutex<LruCache<String, CacheEntry>>>,
 }
 
 impl ApiClient {
@@ -350,17 +320,22 @@ impl ApiClient {
             }
         }
 
-        let client = Client::builder()
+        let client = Arc::new(Client::builder()
             .timeout(Duration::from_secs(timeout))
-            .pool_max_idle_per_host(10) // Connection pooling
+            .pool_max_idle_per_host(20) // Increased connection pooling
+            .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
+            .tcp_keepalive(Duration::from_secs(60)) // TCP keepalive
+            .tcp_nodelay(true) // Disable Nagle's algorithm for lower latency
+            .user_agent("echomind/0.3.0") // Set user agent
             .build()
-            .map_err(|e| EchomindError::NetworkError(e.to_string()))?;
+            .map_err(|e| EchomindError::NetworkError(e.to_string()))?);
 
         Ok(Self {
             client,
             provider,
             api_key: api_key.or_else(|| std::env::var("ECHOMIND_API_KEY").ok()),
             timeout: Duration::from_secs(timeout),
+            cache: Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(100).unwrap()))), // Cache up to 100 entries
         })
     }
 
@@ -369,7 +344,7 @@ impl ApiClient {
     pub async fn list_models(&self) -> Result<Vec<GeminiModel>> {
         if let Provider::Gemini = self.provider {
             let base = self.provider.endpoint();
-            let url = format!("{}/models", base);
+            let url = format!("{}/v1beta/models", base);
             let api_key = self
                 .api_key
                 .clone()
@@ -389,11 +364,11 @@ impl ApiClient {
                     .await
                     .unwrap_or_else(|_| "Unknown error".to_string());
                 let suggestion = match status {
-                    401 => "Check your API key is correct and has the right permissions.",
+                    401 => "Check your Gemini API key is correct and has the right permissions.",
                     403 => "Your API key may not have access to this resource or may be expired.",
                     429 => "Rate limit exceeded. Try again later or reduce request frequency.",
-                    500..=599 => "Server error. The API service may be down, try again later.",
-                    _ => "Check the API documentation for this status code.",
+                    500..=599 => "Server error. The Gemini API service may be down, try again later.",
+                    _ => "Check the Gemini API documentation for this status code.",
                 };
                 return Err(EchomindError::ApiError {
                     status,
@@ -403,7 +378,7 @@ impl ApiClient {
             }
 
             let list: GeminiModelList = response.json().await?;
-            Ok(list.models.unwrap_or_default())
+            Ok(list.models)
         } else {
             Err(EchomindError::InvalidProvider(
                 self.provider.name().to_string(),
@@ -411,7 +386,45 @@ impl ApiClient {
         }
     }
 
+    fn generate_cache_key(&self, request: &ChatRequest) -> String {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut hasher = DefaultHasher::new();
+        self.provider.name().hash(&mut hasher);
+        request.model.hash(&mut hasher);
+        if let Some(temp) = request.temperature {
+            temp.to_bits().hash(&mut hasher);
+        }
+        if let Some(tokens) = request.max_tokens {
+            tokens.hash(&mut hasher);
+        }
+
+        // Hash message contents
+        for message in &request.messages {
+            message.role.hash(&mut hasher);
+            if let Some(text) = message.get_text() {
+                text.hash(&mut hasher);
+            }
+        }
+
+        format!("{:x}", hasher.finish())
+    }
+
     pub async fn send_message(&self, request: ChatRequest) -> Result<String> {
+        // Check cache first (only for non-streaming requests)
+        if request.stream.is_none() || !request.stream.unwrap_or(false) {
+            let cache_key = self.generate_cache_key(&request);
+            if let Ok(mut cache) = self.cache.lock() {
+                if let Some(entry) = cache.get(&cache_key) {
+                    if !entry.is_expired() {
+                        return Ok(entry.response.clone());
+                    } else {
+                        cache.pop(&cache_key); // Remove expired entry
+                    }
+                }
+            }
+        }
         match self.provider {
             Provider::Cohere => {
                 let endpoint = self.provider.endpoint();
@@ -450,16 +463,35 @@ impl ApiClient {
 
         let cohere_response: CohereResponse = response.json().await?;
 
-        return cohere_response.text.ok_or(EchomindError::EmptyResponse);
+        let result = cohere_response.text;
+
+        // Cache the result
+        if request.stream.is_none() || !request.stream.unwrap_or(false) {
+            let cache_key = self.generate_cache_key(&request);
+            if let Ok(mut cache) = self.cache.lock() {
+                let entry = CacheEntry {
+                    response: result.clone(),
+                    timestamp: Instant::now(),
+                    ttl: Duration::from_secs(300), // 5 minute TTL
+                };
+                cache.put(cache_key, entry);
+            }
+        }
+
+        return Ok(result);
             },
             Provider::Gemini => {
-                let endpoint = self.provider.endpoint();
+                let base_endpoint = self.provider.endpoint();
+                let model = request.model.as_deref().unwrap_or("gemini-pro");
+                let endpoint = format!("{}/v1beta/models/{}:generateContent", base_endpoint, model);
 
-                let mut req_builder = self.client.post(endpoint).json(&request);
+                let gemini_request = GeminiRequest::from_chat_request(&request)?;
 
-                // Add authorization header if API key is available
+                let mut req_builder = self.client.post(&endpoint).json(&gemini_request);
+
+                // Add API key as query parameter
                 if let Some(ref key) = self.api_key {
-                    req_builder = req_builder.header("Authorization", format!("Bearer {}", key));
+                    req_builder = req_builder.query(&[("key", key)]);
                 }
 
                 let response = req_builder.send().await?;
@@ -472,11 +504,12 @@ impl ApiClient {
                         .await
                         .unwrap_or_else(|_| "Unknown error".to_string());
                     let suggestion = match status {
-                        401 => "Check your API key is correct and has the right permissions.",
+                        400 => "Check your request format and model name.",
+                        401 => "Check your Gemini API key is correct and has the right permissions.",
                         403 => "Your API key may not have access to this resource or may be expired.",
                         429 => "Rate limit exceeded. Try again later or reduce request frequency.",
-                        500..=599 => "Server error. The API service may be down, try again later.",
-                        _ => "Check the API documentation for this status code.",
+                        500..=599 => "Server error. The Gemini API service may be down, try again later.",
+                        _ => "Check the Gemini API documentation for this status code.",
                     };
                     return Err(EchomindError::ApiError {
                         status,
@@ -486,7 +519,22 @@ impl ApiClient {
                 }
 
                 let resp: GeminiResponse = response.json().await?;
-                return resp.first_text().ok_or(EchomindError::EmptyResponse);
+                let result = resp.first_text()?;
+
+                // Cache the result
+                if request.stream.is_none() || !request.stream.unwrap_or(false) {
+                    let cache_key = self.generate_cache_key(&request);
+                    if let Ok(mut cache) = self.cache.lock() {
+                        let entry = CacheEntry {
+                            response: result.clone(),
+                            timestamp: Instant::now(),
+                            ttl: Duration::from_secs(300), // 5 minute TTL
+                        };
+                        cache.put(cache_key, entry);
+                    }
+                }
+
+                return Ok(result);
             },
             _ => {
                 let endpoint = self.provider.endpoint();
@@ -523,12 +571,27 @@ impl ApiClient {
 
             let chat_response: ChatResponse = response.json().await?;
 
-            return chat_response
+            let result = chat_response
                 .choices
                 .first()
                 .and_then(|choice| choice.message.get_text())
                 .map(|s| s.to_string())
-                .ok_or(EchomindError::EmptyResponse);
+                .ok_or(EchomindError::EmptyResponse)?;
+
+            // Cache the result
+            if request.stream.is_none() || !request.stream.unwrap_or(false) {
+                let cache_key = self.generate_cache_key(&request);
+                if let Ok(mut cache) = self.cache.lock() {
+                    let entry = CacheEntry {
+                        response: result.clone(),
+                        timestamp: Instant::now(),
+                        ttl: Duration::from_secs(300), // 5 minute TTL
+                    };
+                    cache.put(cache_key, entry);
+                }
+            }
+
+            return Ok(result);
             },
         }
     }
@@ -580,21 +643,47 @@ impl ApiClient {
             });
         }
 
-        let mut full_content = String::new();
+        let mut full_content = String::with_capacity(4096); // Pre-allocate reasonable capacity
         let mut stream = response.bytes_stream();
+        let mut buffer = String::with_capacity(1024); // Buffer for accumulating partial lines
 
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(|e| EchomindError::NetworkError(e.to_string()))?;
             let text = String::from_utf8_lossy(&chunk);
 
-            // Parse SSE format
-            for line in text.lines() {
+            // Accumulate text in buffer to handle partial lines
+            buffer.push_str(&text);
+
+            // Process complete lines
+            while let Some(newline_pos) = buffer.find('\n') {
+                let line = buffer[..newline_pos].trim_end().to_string();
+                let remaining = buffer[newline_pos + 1..].to_string();
+                buffer = remaining;
+
                 if line.starts_with("data: ") {
                     let data = &line[6..];
                     if data == "[DONE]" {
                         break;
                     }
 
+                    if let Ok(chunk_data) = serde_json::from_str::<StreamChunk>(data) {
+                        if let Some(choice) = chunk_data.choices.first() {
+                            if let Some(content) = &choice.delta.content {
+                                callback(content);
+                                full_content.push_str(content);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Process any remaining content in buffer
+        for line in buffer.lines() {
+            let line = line.trim_end();
+            if line.starts_with("data: ") {
+                let data = &line[6..];
+                if data != "[DONE]" {
                     if let Ok(chunk_data) = serde_json::from_str::<StreamChunk>(data) {
                         if let Some(choice) = chunk_data.choices.first() {
                             if let Some(content) = &choice.delta.content {

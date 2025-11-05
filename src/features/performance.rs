@@ -164,6 +164,7 @@ impl PerformanceMonitor {
         concurrent_requests: usize,
         duration_seconds: u64,
     ) -> Result<Vec<BenchmarkResult>> {
+        let api_client = api_client.clone();
         let mut handles = Vec::new();
         let start_time = Instant::now();
         let end_time = start_time + Duration::from_secs(duration_seconds);

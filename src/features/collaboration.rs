@@ -1,7 +1,7 @@
 use crate::error::{EchomindError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs;
+
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,7 +41,7 @@ pub struct CollaborationMessage {
     pub message_type: MessageType,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MessageType {
     Text,
     Code,
@@ -200,33 +200,37 @@ impl CollaborationManager {
     }
 
     pub fn get_shareable_content(&mut self, link_id: &str, password: Option<&str>) -> Result<String> {
-        let link = self.shareable_links.get(link_id)
-            .ok_or_else(|| EchomindError::Other("Shareable link not found".to_string()))?;
-        
-        // Check if link has expired
-        if let Some(expires_at) = link.expires_at {
-            if chrono::Utc::now() > expires_at {
-                return Err(EchomindError::Other("Shareable link has expired".to_string()));
+        let conversation_id = {
+            let link = self.shareable_links.get(link_id)
+                .ok_or_else(|| EchomindError::Other("Shareable link not found".to_string()))?;
+
+            // Check if link has expired
+            if let Some(expires_at) = link.expires_at {
+                if chrono::Utc::now() > expires_at {
+                    return Err(EchomindError::Other("Shareable link has expired".to_string()));
+                }
             }
-        }
-        
-        // Check view limit
-        if link.current_views >= link.allowed_views {
-            return Err(EchomindError::Other("Shareable link view limit exceeded".to_string()));
-        }
-        
-        // Check password if required
-        if link.password_protected && password.is_none() {
-            return Err(EchomindError::Other("Password required for this link".to_string()));
-        }
-        
+
+            // Check view limit
+            if link.current_views >= link.allowed_views {
+                return Err(EchomindError::Other("Shareable link view limit exceeded".to_string()));
+            }
+
+            // Check password if required
+            if link.password_protected && password.is_none() {
+                return Err(EchomindError::Other("Password required for this link".to_string()));
+            }
+
+            link.conversation_id.clone()
+        };
+
         // Increment view count
         if let Some(link) = self.shareable_links.get_mut(link_id) {
             link.current_views += 1;
         }
-        
+
         // Return conversation content (placeholder)
-        Ok(format!("Shared conversation content for: {}", link.conversation_id))
+        Ok(format!("Shared conversation content for: {}", conversation_id))
     }
 
     pub fn export_session(&self, session_id: &str, format: &str) -> Result<String> {

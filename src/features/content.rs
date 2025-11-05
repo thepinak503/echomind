@@ -185,8 +185,8 @@ impl ContentManager {
                     template.description.as_ref().map_or(false, |d| d.to_lowercase().contains(&query.to_lowercase())) ||
                     template.content.to_lowercase().contains(&query.to_lowercase());
                 
-                let matches_category = category.is_none() || 
-                    template.category.as_ref().map_or(false, |c| c == category);
+                let matches_category = category.is_none() ||
+                    template.category.as_ref().map_or(false, |c| Some(c.as_str()) == category);
                 
                 let matches_tags = tags.is_empty() || 
                     tags.iter().all(|tag| template.tags.contains(tag));
@@ -204,8 +204,8 @@ impl ContentManager {
                     snippet.description.as_ref().map_or(false, |d| d.to_lowercase().contains(&query.to_lowercase())) ||
                     snippet.content.to_lowercase().contains(&query.to_lowercase());
                 
-                let matches_category = category.is_none() || 
-                    snippet.category.as_ref().map_or(false, |c| c == category);
+                let matches_category = category.is_none() ||
+                    snippet.category.as_ref().map_or(false, |c| Some(c.as_str()) == category);
                 
                 let matches_tags = tags.is_empty() || 
                     tags.iter().all(|tag| snippet.tags.contains(tag));
@@ -224,9 +224,16 @@ impl ContentManager {
     }
 
     pub fn update_template(&mut self, template_id: &str, updates: TemplateUpdate) -> Result<()> {
+        // Extract variables first if content is being updated
+        let variables = if let Some(ref content) = updates.content {
+            Some(self.extract_variables(content))
+        } else {
+            None
+        };
+
         let template = self.library.templates.get_mut(template_id)
             .ok_or_else(|| EchomindError::Other(format!("Template {} not found", template_id)))?;
-        
+
         if let Some(name) = updates.name {
             template.name = name;
         }
@@ -235,7 +242,7 @@ impl ContentManager {
         }
         if let Some(content) = updates.content {
             template.content = content;
-            template.variables = self.extract_variables(&template.content);
+            template.variables = variables.unwrap();
         }
         if let Some(category) = updates.category {
             template.category = Some(category);
@@ -243,10 +250,8 @@ impl ContentManager {
         if let Some(tags) = updates.tags {
             template.tags = tags;
         }
-        
-        template.updated_at = chrono::Utc::now();
-        self.save_library()?;
-        Ok(())
+
+        self.save_library()
     }
 
     pub fn update_snippet(&mut self, snippet_id: &str, updates: SnippetUpdate) -> Result<()> {

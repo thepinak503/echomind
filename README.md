@@ -4,8 +4,9 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 
 ## ✨ Features
 
+### Core Features
 - **Simple piping**: Read from stdin and send to AI
-- **Multiple API providers**: Support for ch.at, ChatAnywhere, OpenAI, Claude, Ollama, and custom endpoints
+- **Multiple API providers**: Support for 9+ AI providers (OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, ChatAnywhere, ch.at)
 - **Streaming responses**: Real-time response display with `--stream`
 - **Interactive REPL mode**: Multi-turn conversations with `-i/--interactive`
 - **Coder mode**: Generate clean code with `--coder`
@@ -16,33 +17,68 @@ A powerful, lightweight command-line tool written in Rust that pipes input to AI
 - **Configuration system**: Save defaults in `~/.config/echomind/config.toml`
 - **Advanced parameters**: Control temperature, max tokens, model selection
 - **Progress indicators**: Visual feedback during API calls
-- **Fast and async**: Optimized for performance with async I/O
-- **Cross-platform**: Linux, macOS, Windows (see compatibility below)
+- **Fast and async**: Optimized for performance with async I/O and caching
+- **Cross-platform**: Linux, macOS, Windows, WSL (see compatibility below)
 - **User-friendly errors**: Clear, actionable error messages
 
-## 💻 OS Compatibility
+### Advanced Features
+- **Multimodal support**: Images, PDFs, documents with `--image`, `--pdf`, `--document`
+- **Voice features**: Voice input/output with `--voice-input`, `--voice-output`
+- **Batch processing**: Process multiple queries with `--batch`
+- **Model benchmarking**: Performance testing with `--benchmark`
+- **Output formatting**: JSON, templates with `--format`
+- **Conversation presets**: Reusable templates with `--preset`
+- **Workflow automation**: Execute complex workflows with `--workflow`
+- **Collaboration**: Share conversations with `--share`, `--collaborate`
+- **Data processing**: CSV, JSON, Excel with `--csv`, `--json-file`, `--excel`
+- **Quality assurance**: Fact-checking, bias detection with `--fact-check`, `--bias-detect`
+- **Security features**: Encryption, audit logging with `--encrypt`, `--audit-log`
+- **Scheduling**: Time-based task execution with `--schedule`
 
-| Operating System | Versions | Status | Notes |
-|-----------------|----------|--------|-------|
-| **Ubuntu/Debian** | Ubuntu 20.04+, Debian 11+ | ✅ Fully Supported | .deb packages available |
-| **Arch Linux** | Rolling | ✅ Fully Supported | PKGBUILD available |
-| **Fedora** | Fedora 35+, RHEL 9+ | ✅ Fully Supported | dnf package manager |
-| **CentOS/RHEL** | CentOS 8+, RHEL 8+ | ✅ Fully Supported | yum/dnf supported |
-| **openSUSE** | Leap 15.3+, Tumbleweed | ✅ Fully Supported | zypper package manager |
-| **Other Linux** | Any with Rust support | ✅ Supported | Manual installation |
-| **macOS** | macOS 10.15+ (Catalina+) | ✅ Fully Supported | Intel & Apple Silicon |
-| **Windows** | Windows 10 (1809+), 11 | ✅ Fully Supported | PowerShell 5.1+/Core 7+ |
-| **WSL** | WSL 1 & WSL 2 | ✅ Fully Supported | Use Linux method |
+## 💻 Cross-Platform Compatibility
 
-**Minimum Requirements:**
-- **RAM**: 50 MB
-- **Disk Space**: 10 MB (binary only), 500 MB (with Rust toolchain)
-- **Network**: Internet connection for API calls
+| Operating System | Versions | Status | Architecture | Package Manager | Notes |
+|-----------------|----------|--------|--------------|-----------------|-------|
+| **Linux** | | | | | |
+| ├─ **Ubuntu** | 20.04+ | ✅ Fully Supported | x86_64, ARM64 | apt, snap | .deb packages, universal installer |
+| ├─ **Debian** | 11+ | ✅ Fully Supported | x86_64, ARM64 | apt | .deb packages available |
+| ├─ **Arch Linux** | Rolling | ✅ Fully Supported | x86_64 | pacman | PKGBUILD in AUR |
+| ├─ **Fedora** | 35+ | ✅ Fully Supported | x86_64, ARM64 | dnf | RPM packages |
+| ├─ **CentOS/RHEL** | 8+ | ✅ Fully Supported | x86_64 | yum/dnf | RPM packages |
+| ├─ **openSUSE** | Leap 15.3+, Tumbleweed | ✅ Fully Supported | x86_64 | zypper | RPM packages |
+| ├─ **Alpine Linux** | 3.14+ | ✅ Supported | x86_64, ARM64 | apk | Manual installation |
+| └─ **Other Linux** | Any with Rust 1.70+ | ✅ Supported | x86_64, ARM64 | - | Universal installer |
+| **macOS** | | | | | |
+| ├─ **macOS** | 10.15+ (Catalina+) | ✅ Fully Supported | Intel x86_64 | Homebrew | Universal binaries |
+| └─ **macOS** | 11.0+ (Big Sur+) | ✅ Fully Supported | Apple Silicon ARM64 | Homebrew | Native ARM64 support |
+| **Windows** | | | | | |
+| ├─ **Windows 10** | 1809+ | ✅ Fully Supported | x86_64 | WinGet, Chocolatey | PowerShell installer |
+| ├─ **Windows 11** | 21H2+ | ✅ Fully Supported | x86_64, ARM64 | WinGet, Chocolatey | PowerShell installer |
+| └─ **Windows Server** | 2019+ | ✅ Supported | x86_64 | - | Manual installation |
+| **Containers** | | | | | |
+| ├─ **Docker** | All versions | ✅ Supported | Multi-arch | Docker Hub | Pre-built images |
+| ├─ **Podman** | All versions | ✅ Supported | Multi-arch | - | Compatible with Docker images |
+| └─ **WSL** | WSL 1 & WSL 2 | ✅ Fully Supported | x86_64 | apt/pacman/etc | Use Linux installation methods |
+
+**System Requirements:**
+- **RAM**: 50 MB minimum, 128 MB recommended
+- **Disk Space**: 10 MB (binary only), 500 MB (with Rust toolchain for building)
+- **Network**: Internet connection required for API calls (except local Ollama)
+- **CPU**: Any modern CPU (x86_64, ARM64, Apple Silicon)
+- **OS Kernel**: Linux 3.10+, macOS 10.15+, Windows 10 1809+
+
+**Feature Compatibility:**
+- ✅ All core features work on all platforms
+- ✅ Voice features require system audio libraries (ALSA/PulseAudio on Linux, CoreAudio on macOS, WASAPI on Windows)
+- ✅ Clipboard features use native system APIs
+- ✅ File I/O works with platform-specific path handling
+- ✅ Terminal colors and formatting work on all modern terminals
 
 ## 📦 Installation
 
-### Quick Install (Linux/macOS)
+### 🚀 Quick Install (Universal)
 
+**One-liner for Linux/macOS:**
 ```bash
 bash <(curl -fsSL https://is.gd/echomindlin)
 ```
@@ -52,61 +88,129 @@ bash <(curl -fsSL https://is.gd/echomindlin)
 curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
 ```
 
+**Windows PowerShell:**
+```powershell
+irm https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex
+```
+
 ### Platform-Specific Installation
 
 #### 🐧 Linux
 
-**Supported Distributions:**
-- Ubuntu 20.04+, Debian 11+ (apt)
-- Arch Linux, Manjaro (pacman)
-- Fedora 35+, RHEL 9+ (dnf)
-- CentOS 8+, Rocky Linux, AlmaLinux (yum/dnf)
-- openSUSE Leap 15.3+, Tumbleweed (zypper)
-**(AUR)**
+**Ubuntu/Debian (apt):**
 ```bash
-yay -S echomind
+# Add repository
+echo "deb [trusted=yes] https://packages.echomind.dev/apt/ ./" | sudo tee /etc/apt/sources.list.d/echomind.list
+sudo apt update && sudo apt install echomind
+
+# Or download .deb directly
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind_0.3.0_amd64.deb
+sudo dpkg -i echomind_0.3.0_amd64.deb
 ```
-OR
+
+**Arch Linux (pacman):**
 ```bash
+# From AUR
+yay -S echomind
+
+# Or manual build
 git clone https://github.com/thepinak503/echomind.git
 cd echomind
 makepkg -si
 ```
-or
-**Using Cargo (if Rust is installed):**
+
+**Fedora/RHEL/CentOS (dnf/yum):**
 ```bash
-cargo install --git https://github.com/thepinak503/echomind
+# Download RPM
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-0.3.0-1.x86_64.rpm
+sudo dnf install echomind-0.3.0-1.x86_64.rpm
+```
+
+**openSUSE (zypper):**
+```bash
+# Download RPM
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-0.3.0-1.x86_64.rpm
+sudo zypper install echomind-0.3.0-1.x86_64.rpm
+```
+
+**Alpine Linux (apk):**
+```bash
+# Download pre-built binary
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-linux-musl-x86_64
+chmod +x echomind-linux-musl-x86_64
+sudo mv echomind-linux-musl-x86_64 /usr/local/bin/echomind
+```
+
+**Universal Linux (any distro):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
 ```
 
 
 #### 🍎 macOS
 
-**Supported:** macOS 10.15+ (Catalina, Big Sur, Monterey, Ventura, Sonoma)
-**Architecture:** Intel (x86_64) and Apple Silicon (M1/M2/M3 arm64)
+**Supported:** macOS 10.15+ (Catalina, Big Sur, Monterey, Ventura, Sonoma, Sequoia)
+**Architecture:** Intel (x86_64) and Apple Silicon (M1/M2/M3/M4 arm64)
 
+**Homebrew (Recommended):**
 ```bash
+brew install echomind
+```
+
+**Manual Installation:**
+```bash
+# Download universal binary
+curl -L https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-macos-universal -o echomind
+chmod +x echomind
+sudo mv echomind /usr/local/bin/
+
+# Or build from source
 git clone https://github.com/thepinak503/echomind.git
 cd echomind
 cargo build --release
 sudo install -m 755 target/release/echomind /usr/local/bin/echomind
 ```
 
+**Apple Silicon (ARM64) Note:** Universal binaries work on both Intel and Apple Silicon Macs.
+
 #### 🪟 Windows
 
-**Supported:** Windows 10 (version 1809+), Windows 11
+**Supported:** Windows 10 (version 1809+), Windows 11, Windows Server 2019+
 **PowerShell:** 5.1+ or PowerShell Core 7+
+**Architecture:** x86_64 (AMD64), ARM64 support coming soon
 
-**Quick Install (Recommended - Run as Administrator):**
+**WinGet (Recommended):**
+```powershell
+winget install --id Echomind.Echomind
+```
+
+**Chocolatey:**
+```powershell
+choco install echomind
+```
+
+**PowerShell Install (Manual):**
 ```powershell
 # Download the executable
-curl -L https://github.com/thepinak503/echomind/raw/master/echomind-windows-x86_64.exe -o echomind.exe
+Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-windows-x86_64.exe" -OutFile "echomind.exe"
 
-# Move to a directory in PATH (e.g., C:\Windows\System32)
-Move-Item echomind.exe C:\Windows\System32\echomind.exe
+# Move to a directory in PATH
+# Option 1: System-wide (requires Administrator)
+Move-Item echomind.exe "C:\Windows\System32\echomind.exe"
+
+# Option 2: User directory
+Move-Item echomind.exe "$env:USERPROFILE\bin\echomind.exe"
+# Add to PATH: setx PATH "$env:PATH;$env:USERPROFILE\bin"
 ```
 
 **WSL (Windows Subsystem for Linux):**
-WSL 1 & WSL 2 supported - Use the Linux installation instructions
+```bash
+# Use Linux installation methods
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
+```
+
+**Windows Terminal Integration:**
+Add to Windows Terminal settings for enhanced experience with colors and Unicode support.
 
 ### 📦 Pre-built Binaries
 
@@ -181,31 +285,22 @@ echo "optimize this SQL query" | echomind -co optimized.sql
 
 ### Multiple API Providers
 
-Use different AI providers:
+Use different AI providers with their respective models:
 
 ```bash
-# ChatAnywhere (requires API key)
-echo "Hello" | echomind --provider chatanywhere --api-key YOUR_KEY
+# Free providers (no API key needed)
+echo "Hello" | echomind --provider chat                    # ch.at API
+echo "Help" | echomind --provider ollama --model llama2    # Local Ollama
 
-# OpenAI
+# Commercial providers (require API keys)
 echo "Explain Docker" | echomind --provider openai --model gpt-4
-
-# Claude
 echo "Write a poem" | echomind --provider claude --model claude-3-opus
+echo "Analyze this" | echomind --provider gemini --model gemini-1.5-pro
+echo "Explain memes" | echomind --provider grok --model grok-1
+echo "Write a story" | echomind --provider mistral --model mistral-large
+echo "Summarize text" | echomind --provider cohere --model command
 
-# Ollama (local)
-echo "Help me" | echomind --provider ollama --model llama2
-
-# Grok (xAI)
-echo "Explain memes" | echomind --provider grok --model grok-beta
-
-# Mistral
-echo "Write a story" | echomind --provider mistral --model mistral-large-latest
-
-# Cohere
-echo "Summarize this text" | echomind --provider cohere --model command
-
-# Custom endpoint
+# Custom endpoints
 echo "Question?" | echomind --provider https://your-api.com/v1/chat/completions
 ```
 
@@ -267,24 +362,149 @@ echomind --clipboard --compare gpt-4,gpt-3.5-turbo,claude-3-sonnet
 
 ### Advanced Parameters
 
-Control AI behavior:
+Fine-tune AI behavior and output:
 
 ```bash
-# Temperature (creativity)
-echo "Tell me a story" | echomind --temperature 1.5
+# Temperature control (0.0-2.0)
+echo "Be creative!" | echomind --temperature 1.5      # High creativity
+echo "Be precise" | echomind --temperature 0.1       # Low creativity
 
-# Max tokens (response length)
-echo "Explain briefly" | echomind --max-tokens 100
+# Response length limits
+echo "Brief answer" | echomind --max-tokens 50        # Short responses
+echo "Detailed analysis" | echomind --max-tokens 2000 # Long responses
 
-# Custom system prompt
+# Custom system prompts
 echo "Hello" | echomind --system "You are a pirate. Respond in pirate speak."
+echo "Code" | echomind --system "You are an expert programmer. Explain concepts clearly."
 
 # Output formatting
-echo "Hello" | echomind --format json
-echo "Hello" | echomind --format "template:Response from {provider}/{model}: {content}"
+echo "List items" | echomind --format json
+echo "Question" | echomind --format "template:Q: {prompt}\nA: {content}"
 
-# Combine parameters
-echo "Code review" | echomind -p openai -m gpt-4 -t 0.3 --max-tokens 2000
+# Combine multiple parameters
+echo "Code review" | echomind -p openai -m gpt-4 -t 0.3 --max-tokens 2000 --stream
+```
+
+### Multimodal Features
+
+Work with images, documents, and other media:
+
+```bash
+# Analyze images
+echomind --image diagram.png "Explain this flowchart"
+echomind --image photo.jpg "What do you see in this picture?"
+
+# Process documents
+echomind --pdf research.pdf "Summarize this paper"
+echomind --document report.docx "Extract key points"
+
+# Batch processing
+echomind --batch-images ./photos/ "Describe these images"
+
+# Webcam and screenshots
+echomind --webcam "What's in front of the camera?"
+echomind --screenshot "Analyze this screen"
+```
+
+### Voice Features
+
+Voice input and output capabilities:
+
+```bash
+# Voice input from microphone
+echomind --voice-input "Speak your question"
+
+# Text-to-speech output
+echo "Hello world" | echomind --voice-output
+
+# Combined voice interaction
+echomind --voice-input --voice-output --voice "alloy"
+
+# Specify voice
+echo "Read this text" | echomind --voice-output --voice "nova"
+```
+
+### Batch Processing & Automation
+
+Process multiple queries efficiently:
+
+```bash
+# Process multiple queries from file
+echo -e "What is AI?\nExplain Rust\nWrite hello world in Python" > queries.txt
+echomind --batch queries.txt
+
+# Workflow automation
+echomind --workflow code-review-workflow.json
+echomind --list-workflows
+
+# Scheduling
+echomind --schedule "2024-12-25 10:00" "Send holiday greeting"
+```
+
+### Model Comparison & Benchmarking
+
+Compare and benchmark different models:
+
+```bash
+# Compare multiple models
+echo "Pros and cons of microservices" | echomind --compare "gpt-4,claude-3-opus,gemini-pro"
+
+# Benchmark performance
+echo "Explain quantum computing" | echomind --benchmark --provider openai --model gpt-4
+
+# Performance comparison
+echomind --benchmark-compare "gpt-3.5-turbo,gpt-4,claude-3-haiku" "Complex algorithm explanation"
+```
+
+### Data Processing
+
+Work with various data formats:
+
+```bash
+# Process CSV files
+echomind --csv sales.csv "Analyze this sales data"
+
+# Process JSON data
+echomind --json-file config.json "Explain this configuration"
+
+# Process Excel spreadsheets
+echomind --excel report.xlsx "Summarize this financial report"
+```
+
+### Collaboration & Sharing
+
+Share and collaborate on conversations:
+
+```bash
+# Share conversation
+echomind --share --history session.json
+
+# Start collaboration session
+echomind --collaborate --history team-session.json
+
+# Export conversation history
+echomind --export-history markdown --history session.json > conversation.md
+```
+
+### Quality Assurance & Security
+
+Advanced quality and security features:
+
+```bash
+# Fact checking
+echo "The Earth is flat" | echomind --fact-check
+
+# Bias detection
+echo "Analyze this text for bias" | echomind --bias-detect
+
+# Quality scoring
+echo "Explain photosynthesis" | echomind --quality-score
+
+# Encrypted conversations
+echomind --encrypt --history secure-session.json
+
+# Audit logging
+echomind --audit-log --history audited-session.json
 ```
 
 ## ⚙️ Configuration

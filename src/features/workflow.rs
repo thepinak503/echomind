@@ -136,7 +136,7 @@ impl WorkflowManager {
             context.variables.insert(key, value);
         }
         
-        let mut max_iterations = 100; // Prevent infinite loops
+        let max_iterations = 100; // Prevent infinite loops
         let mut iteration = 0;
         
         while !context.current_step.is_empty() && iteration < max_iterations {
@@ -319,11 +319,11 @@ impl WorkflowManager {
                 (ConditionOperator::EndsWith, Some(serde_json::Value::String(var)), serde_json::Value::String(val)) => {
                     var.ends_with(val)
                 }
-                (ConditionOperator::GreaterThan, Some(var), val) => {
+                (ConditionOperator::GreaterThan, Some(_var), _val) => {
                     // This would need more sophisticated comparison
                     false
                 }
-                (ConditionOperator::LessThan, Some(var), val) => {
+                (ConditionOperator::LessThan, Some(_var), _val) => {
                     // This would need more sophisticated comparison
                     false
                 }
@@ -333,7 +333,7 @@ impl WorkflowManager {
             if condition_met {
                 // Return the next step ID if condition is met
                 // For now, we'll use a simple approach where the condition value contains the next step
-                if let Some(serde_json::Value::String(next_step)) = &condition.value {
+                if let serde_json::Value::String(next_step) = &condition.value {
                     return Ok(Some(next_step.clone()));
                 }
             }

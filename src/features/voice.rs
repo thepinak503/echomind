@@ -1,7 +1,7 @@
 use crate::error::{EchomindError, Result};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{Device, Host, Stream, StreamConfig, SampleFormat};
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
+use cpal::Stream;
+use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::{Arc, Mutex};
@@ -28,7 +28,7 @@ impl VoiceManager {
             .default_input_device()
             .ok_or_else(|| EchomindError::Other("No audio input device found".to_string()))?;
 
-        let config = device.default_input_config()
+        let _config = device.default_input_config()
             .map_err(|e| EchomindError::Other(format!("Failed to get input config: {}", e)))?;
 
         let recording = Arc::clone(&self.recording);
@@ -69,13 +69,13 @@ impl VoiceManager {
         }
     }
 
-    async fn transcribe_with_whisper(&self, audio_file: &str) -> Result<String> {
+    async fn transcribe_with_whisper(&self, _audio_file: &str) -> Result<String> {
         // This would integrate with whisper-rs
         // For now, return a placeholder
         Ok("Transcribed text from audio".to_string())
     }
 
-    pub async fn text_to_speech(&mut self, text: &str, voice: Option<&str>) -> Result<()> {
+    pub async fn text_to_speech(&mut self, text: &str, _voice: Option<&str>) -> Result<()> {
         let (_stream, stream_handle) = OutputStream::try_default()
             .map_err(|e| EchomindError::Other(format!("Failed to create output stream: {}", e)))?;
         

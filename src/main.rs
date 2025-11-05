@@ -133,19 +133,36 @@ async fn run() -> Result<()> {
         println!("\nFor more information, run: echomind --help");
         return Ok(());
     } else {
+        // Read stdin with size limit to prevent memory exhaustion
+        const MAX_INPUT_SIZE: usize = 10 * 1024 * 1024; // 10MB limit
         let mut input = String::new();
-        match io::stdin().read_to_string(&mut input).await {
-            Ok(_) => {
-                if input.trim().is_empty() {
-                    return Err(EchomindError::InputError(std::io::Error::new(
-                        std::io::ErrorKind::InvalidInput,
-                        "No input provided",
-                    )));
-                }
-                input
+        let mut buffer = [0u8; 8192]; // 8KB buffer for efficient reading
+        let mut total_read = 0;
+
+        loop {
+            let n = io::stdin().read(&mut buffer).await?;
+            if n == 0 {
+                break; // EOF
             }
-            Err(e) => return Err(EchomindError::InputError(e)),
+
+            total_read += n;
+            if total_read > MAX_INPUT_SIZE {
+                return Err(EchomindError::InputError(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    format!("Input too large. Maximum allowed size is {}MB", MAX_INPUT_SIZE / (1024 * 1024)),
+                )));
+            }
+
+            input.push_str(&String::from_utf8_lossy(&buffer[..n]));
         }
+
+        if input.trim().is_empty() {
+            return Err(EchomindError::InputError(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "No input provided",
+            )));
+        }
+        input
     };
 
     run_single_query(args, config, input, initial_messages, system_prompt).await
@@ -186,6 +203,7 @@ async fn run_batch_queries(
 }
 
 async fn run_single_query(args: Args, config: Config, input: String, messages: Vec<Message>, system_prompt: Option<String>) -> Result<()> {
+    let start_time = std::time::Instant::now();
     let (coder, output) = args.resolve_coder_and_output();
 
     // Determine provider and fallback chain
@@ -340,22 +358,47 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
 
     // Process output content
     let output_content = if coder {
-        // Filter empty lines and remove markdown code fences
-        let mut lines: Vec<&str> = content.lines().collect();
+        // Filter empty lines and remove markdown code fences more efficiently
+        let content_str = content.as_str();
+        let mut result = String::with_capacity(content.len()); // Pre-allocate
+        let lines = content_str.lines();
 
-        // Remove markdown code fences
-        if lines.first().map_or(false, |l| l.trim().starts_with("```")) {
-            lines.remove(0);
+        // Skip first line if it's a code fence
+        let mut first_line = true;
+        let mut skip_first = false;
+        let mut _skip_last = false;
+
+        // Check if we need to skip first/last lines
+        if let Some(first) = content_str.lines().next() {
+            if first.trim().starts_with("```") {
+                skip_first = true;
+            }
         }
-        if lines.last().map_or(false, |l| l.trim().starts_with("```")) {
-            lines.pop();
+        if let Some(last) = content_str.lines().last() {
+            if last.trim().starts_with("```") {
+                _skip_last = true;
+            }
         }
 
-        lines
-            .into_iter()
-            .filter(|l| !l.trim().is_empty())
-            .collect::<Vec<_>>()
-            .join("\n")
+        for line in lines {
+            if first_line && skip_first {
+                first_line = false;
+                continue;
+            }
+            first_line = false;
+
+            // Skip empty lines and code fences
+            let trimmed = line.trim();
+            if !trimmed.is_empty() && !trimmed.starts_with("```") {
+                if !result.is_empty() {
+                    result.push('\n');
+                }
+                result.push_str(line);
+            }
+        }
+
+        // Remove last line if it was a code fence (already handled by the loop)
+        result
     } else {
         content.clone()
     };
@@ -396,6 +439,12 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
         if args.verbose {
             eprintln!("{}", "✅ Saved to history".green());
         }
+    }
+
+    // Performance profiling
+    let elapsed = start_time.elapsed();
+    if args.verbose {
+        eprintln!("{} {:.2}s", "⏱️  Total time:".cyan(), elapsed.as_secs_f64());
     }
 
     Ok(())
@@ -530,7 +579,7 @@ fn format_output(content: &str, format_str: &str, provider: &str, model: &str) -
 
 // Compare responses from multiple models
 async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Config, system_prompt: Option<String>) -> Result<()> {
-    let models: Vec<&str> = models_str.split(',').map(|s| s.trim()).collect();
+    let models: Vec<String> = models_str.split(',').map(|s| s.trim().to_string()).collect();
 
     if models.is_empty() {
         return Err(EchomindError::Other(
@@ -541,51 +590,82 @@ async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Con
     println!("{}", "=== Multi-Model Comparison ===".cyan().bold());
     println!("{}: {}\n", "Input".yellow(), input);
 
+    // Prepare concurrent tasks
+    let mut tasks = Vec::new();
+
     for model_name in models {
+        let input = input.to_string();
+        let system_prompt = system_prompt.clone();
+        let args = args.clone();
+        let config = config.clone();
+
+        let task = tokio::spawn(async move {
+            // Determine provider from model name or use default
+            let (provider_name, actual_model) = if model_name.starts_with("gpt") {
+                ("openai", model_name)
+            } else if model_name.starts_with("claude") {
+                ("claude", model_name)
+            } else if model_name.contains('/') {
+                // Assume format like "ollama/llama2"
+                let parts: Vec<&str> = model_name.split('/').collect();
+                (parts[0], parts.get(1).unwrap_or(&model_name.as_str()).to_string())
+            } else {
+                (
+                    args.provider.as_deref().unwrap_or(&config.api.provider),
+                    model_name,
+                )
+            };
+
+            let provider = Provider::from_string(provider_name)?;
+            let api_key = args
+                .api_key
+                .as_ref()
+                .or(config.api.api_key.as_ref())
+                .cloned();
+            let timeout = args.timeout.unwrap_or(config.api.timeout);
+
+            let client = ApiClient::new(provider, api_key, timeout)?;
+
+            let mut messages = Vec::new();
+            if let Some(s_prompt) = system_prompt {
+                messages.push(Message::text("system".to_string(), s_prompt));
+            }
+            messages.push(Message::text("user".to_string(), input));
+
+            let request = ChatRequest {
+                messages,
+                model: Some(actual_model.to_string()),
+                temperature: args.temperature.or(Some(config.defaults.temperature)),
+                max_tokens: args.max_tokens.or(config.defaults.max_tokens),
+                stream: None,
+            };
+
+            let result = client.send_message(request).await;
+            Ok::<(String, Result<String>), EchomindError>((actual_model, result))
+        });
+
+        tasks.push(task);
+    }
+
+    // Execute all tasks concurrently and collect results
+    let mut results = Vec::new();
+    for task in tasks {
+        match task.await {
+            Ok(Ok((model_name, result))) => results.push((model_name, result)),
+            Ok(Err(e)) => eprintln!("Task error: {}", e),
+            Err(e) => eprintln!("Join error: {}", e),
+        }
+    }
+
+    // Sort results by model name for consistent output
+    results.sort_by(|a, b| a.0.cmp(&b.0));
+
+    // Display results
+    for (model_name, result) in results {
         println!("{} {}", "Model:".green().bold(), model_name);
         println!("{}", "─".repeat(80).bright_black());
 
-        // Determine provider from model name or use default
-        let (provider_name, actual_model) = if model_name.starts_with("gpt") {
-            ("openai", model_name)
-        } else if model_name.starts_with("claude") {
-            ("claude", model_name)
-        } else if model_name.contains('/') {
-            // Assume format like "ollama/llama2"
-            let parts: Vec<&str> = model_name.split('/').collect();
-            (parts[0], *parts.get(1).unwrap_or(&model_name))
-        } else {
-            (
-                args.provider.as_deref().unwrap_or(&config.api.provider),
-                model_name,
-            )
-        };
-
-        let provider = Provider::from_string(provider_name)?;
-        let api_key = args
-            .api_key
-            .as_ref()
-            .or(config.api.api_key.as_ref())
-            .cloned();
-        let timeout = args.timeout.unwrap_or(config.api.timeout);
-
-        let client = ApiClient::new(provider, api_key, timeout)?;
-
-        let mut messages = Vec::new();
-        if let Some(s_prompt) = system_prompt.clone() {
-            messages.push(Message::text("system".to_string(), s_prompt));
-        }
-        messages.push(Message::text("user".to_string(), input.to_string()));
-
-        let request = ChatRequest {
-            messages,
-            model: Some(actual_model.to_string()),
-            temperature: args.temperature.or(Some(config.defaults.temperature)),
-            max_tokens: args.max_tokens.or(config.defaults.max_tokens),
-            stream: None,
-        };
-
-        match client.send_message(request).await {
+        match result {
             Ok(response) => {
                 println!("{}", response);
             }

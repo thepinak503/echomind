@@ -25,7 +25,6 @@ base64 = "0.22"
 # Voice support
 cpal = "0.15"
 rodio = "0.19"
-whisper-rs = "0.10"
 
 # Security & encryption
 ring = "0.17"
@@ -49,6 +48,7 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 url = "2.5"
 
 # Performance monitoring
+lru = "0.12"
 
 # Accessibility
 crossterm = "0.27"
