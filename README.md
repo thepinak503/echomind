@@ -105,53 +105,8 @@ irm https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | 
 
 #### 🐧 Linux
 
-**Ubuntu/Debian (apt):**
 ```bash
-# Add repository
-echo "deb [trusted=yes] https://packages.echomind.dev/apt/ ./" | sudo tee /etc/apt/sources.list.d/echomind.list
-sudo apt update && sudo apt install echomind
-
-# Or download .deb directly
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind_0.3.0_amd64.deb
-sudo dpkg -i echomind_0.3.0_amd64.deb
-```
-
-**Arch Linux (pacman):**
-```bash
-# From AUR
-yay -S echomind
-
-# Or manual build
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-makepkg -si
-```
-
-**Fedora/RHEL/CentOS (dnf/yum):**
-```bash
-# Download RPM
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-0.3.0-1.x86_64.rpm
-sudo dnf install echomind-0.3.0-1.x86_64.rpm
-```
-
-**openSUSE (zypper):**
-```bash
-# Download RPM
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-0.3.0-1.x86_64.rpm
-sudo zypper install echomind-0.3.0-1.x86_64.rpm
-```
-
-**Alpine Linux (apk):**
-```bash
-# Download pre-built binary
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-linux-musl-x86_64
-chmod +x echomind-linux-musl-x86_64
-sudo mv echomind-linux-musl-x86_64 /usr/local/bin/echomind
-```
-
-**Universal Linux (any distro):**
-```bash
-curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
+cargo install --git https://github.com/thepinak503/echomind.git
 ```
 
 
@@ -160,26 +115,9 @@ curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install
 **Supported:** macOS 10.15+ (Catalina, Big Sur, Monterey, Ventura, Sonoma, Sequoia)
 **Architecture:** Intel (x86_64) and Apple Silicon (M1/M2/M3/M4 arm64)
 
-**Homebrew (Recommended):**
 ```bash
-brew install echomind
+cargo install --git https://github.com/thepinak503/echomind.git
 ```
-
-**Manual Installation:**
-```bash
-# Download universal binary
-curl -L https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-macos-universal -o echomind
-chmod +x echomind
-sudo mv echomind /usr/local/bin/
-
-# Or build from source
-git clone https://github.com/thepinak503/echomind.git
-cd echomind
-cargo build --release
-sudo install -m 755 target/release/echomind /usr/local/bin/echomind
-```
-
-**Apple Silicon (ARM64) Note:** Universal binaries work on both Intel and Apple Silicon Macs.
 
 #### 🪟 Windows
 
@@ -187,34 +125,13 @@ sudo install -m 755 target/release/echomind /usr/local/bin/echomind
 **PowerShell:** 5.1+ or PowerShell Core 7+
 **Architecture:** x86_64 (AMD64), ARM64 support coming soon
 
-**WinGet (Recommended):**
-```powershell
-winget install --id Echomind.Echomind
-```
-
-**Chocolatey:**
-```powershell
-choco install echomind
-```
-
-**PowerShell Install (Manual):**
-```powershell
-# Download the executable
-Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-windows-x86_64.exe" -OutFile "echomind.exe"
-
-# Move to a directory in PATH
-# Option 1: System-wide (requires Administrator)
-Move-Item echomind.exe "C:\Windows\System32\echomind.exe"
-
-# Option 2: User directory
-Move-Item echomind.exe "$env:USERPROFILE\bin\echomind.exe"
-# Add to PATH: setx PATH "$env:PATH;$env:USERPROFILE\bin"
+```bash
+cargo install --git https://github.com/thepinak503/echomind.git
 ```
 
 **WSL (Windows Subsystem for Linux):**
 ```bash
-# Use Linux installation methods
-curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
+cargo install --git https://github.com/thepinak503/echomind.git
 ```
 
 **Windows Terminal Integration:**
