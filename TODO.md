@@ -53,7 +53,6 @@
 - [ ] Plugin system
 - [ ] Cloud deployment
 - [ ] Advanced analytics
-- [ ] Mobile app
 
 ## Known Issues
 - Build may timeout on slower systems - use pre-built binaries
