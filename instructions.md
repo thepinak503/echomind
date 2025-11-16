@@ -125,6 +125,11 @@ When user requests changes:
 - **Dependency Issues**: Update Cargo.lock, check versions
 - **Compilation Errors**: Fix syntax, add missing imports
 - **Linker Errors**: Check system libraries, update build scripts
+- **Missing Module Files**: Comment out pub mod declarations for non-existent files in src/features/mod.rs
+- **Undefined CLI Fields**: Comment out usage of disabled CLI arguments in main.rs
+- **Unused Imports/Functions**: Comment out imports and functions for disabled features to eliminate warnings
+- **Conflicting Derives**: Remove duplicate derive attributes on structs
+- **References to Disabled Enums**: Comment out or replace references to disabled enum variants
 
 ### Installation Failures
 - **Permission Denied**: Suggest running as admin/sudo
@@ -139,6 +144,12 @@ When user requests changes:
 4. **Test**: Re-run build/install
 5. **Repeat**: If still fails, ask user for input or try alternatives
 6. **Document**: Note fixes in CHANGELOG.md
+
+### Code Cleanup
+- **Comment Out Disabled Features**: For features like multimodal, voice, comment out related code, imports, and enums to avoid errors and warnings
+- **Remove Unused Code**: Delete or comment unused functions, structs, and variants after disabling features
+- **Update Mod Files**: Ensure src/features/mod.rs only includes existing modules
+- **Fix Line Endings**: Use consistent LF/CRLF as per platform when committing
 
 ## Testing and Quality Assurance
 ### Running Tests
