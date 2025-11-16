@@ -168,6 +168,10 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
                                 app.response.clear();
                                 app.state = AppState::Input;
                             }
+                            KeyCode::Char('q') => {
+                                // Quit
+                                return Ok(());
+                            }
                             _ => {}
                         }
                     } else {
@@ -336,7 +340,7 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     match app.state {
         AppState::Input => {
-            let text = "Enter your prompt and press Enter...\nUse ↑/↓ for history, Ctrl+T for temp, Ctrl+S for stream, Ctrl+H for clear history, Ctrl+R for clear response, Esc to exit";
+            let text = "Enter your prompt and press Enter...\nUse ↑/↓ for history, Ctrl+T for temp, Ctrl+S for stream, Ctrl+H for clear history, Ctrl+R for clear response, Ctrl+Q or Esc to exit";
             let para = Paragraph::new(text)
                 .alignment(Alignment::Center)
                 .style(Style::default().fg(Color::Gray))

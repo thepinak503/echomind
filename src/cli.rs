@@ -103,7 +103,7 @@ pub struct Args {
     pub show_config: bool,
 
     /// List all available AI providers
-    #[arg(long)]
+    #[arg(long, alias("ls"))]
     pub list_providers: bool,
 
     /// Read input from clipboard instead of stdin
