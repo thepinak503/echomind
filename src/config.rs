@@ -51,6 +51,12 @@ pub struct Defaults {
     pub max_tokens: Option<u32>,
 
     #[serde(default)]
+    pub top_p: Option<f32>,
+
+    #[serde(default)]
+    pub top_k: Option<u32>,
+
+    #[serde(default)]
     pub coder_mode: bool,
 
     #[serde(default = "default_stream")]
@@ -95,6 +101,8 @@ impl Default for Defaults {
         Self {
             temperature: default_temperature(),
             max_tokens: None,
+            top_p: None,
+            top_k: None,
             coder_mode: false,
             stream: default_stream(),
         }

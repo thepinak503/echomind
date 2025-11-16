@@ -58,6 +58,14 @@ pub struct Args {
     #[arg(long)]
     pub max_tokens: Option<u32>,
 
+    /// Top-p sampling parameter (0.0-1.0)
+    #[arg(long)]
+    pub top_p: Option<f32>,
+
+    /// Top-k sampling parameter
+    #[arg(long)]
+    pub top_k: Option<u32>,
+
     /// Custom system prompt
     #[arg(short = 's', long)]
     pub system: Option<String>,

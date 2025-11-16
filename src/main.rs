@@ -274,21 +274,7 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
         input.trim().to_string()
     };
 
-    // let user_message = if let Some(image_path) = &args.image {
-    //     // Load image and create multimodal message
-    //     let image_data = load_image_as_base64(image_path)?;
-    //     let parts = vec![
-    //         ContentPart::Text { text: user_content },
-    //         ContentPart::ImageUrl {
-    //             image_url: ImageUrl {
-    //                 url: format!("data:image/jpeg;base64,{}", image_data),
-    //             },
-    //         },
-    //     ];
-    //     Message::multimodal("user".to_string(), parts)
-    // } else {
-        let user_message = Message::text("user".to_string(), user_content);
-    // };
+    let user_message = Message::text("user".to_string(), user_content);
     messages.push(user_message.clone());
 
     // Build request
@@ -297,6 +283,8 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
         model: args.model.or(Some(config.api.model.clone())),
         temperature: args.temperature.or(Some(config.defaults.temperature)),
         max_tokens: args.max_tokens.or(config.defaults.max_tokens),
+        top_p: args.top_p.or(config.defaults.top_p),
+        top_k: args.top_k.or(config.defaults.top_k),
         stream: if args.stream { Some(true) } else { None },
     };
 
@@ -360,7 +348,7 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
     let output_content = if coder {
         // Filter empty lines and remove markdown code fences more efficiently
         let content_str = content.as_str();
-        let mut result = String::with_capacity(content.len()); // Pre-allocate
+        let mut result = String::with_capacity(content.len());
         let lines = content_str.lines();
 
         // Skip first line if it's a code fence
@@ -410,6 +398,9 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
         output_content
     };
 
+    // Calculate elapsed time
+    let elapsed = start_time.elapsed();
+
     // Save to file if specified
     if let Some(outfile) = &output {
         fs::write(outfile, &formatted_output).map_err(|e| EchomindError::FileError(e.to_string()))?;
@@ -432,10 +423,14 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
     }
 
     // Display metrics
-    println!("\n{} {} | {} {} | {} {:.2}s",
-        "Provider:".cyan(), provider_str,
-        "Model:".cyan(), model,
-        "Time:".cyan(), elapsed.as_secs_f64()
+    print_metrics_table(
+        provider_str,
+        &model,
+        request.temperature,
+        request.max_tokens,
+        request.top_p,
+        request.top_k,
+        elapsed.as_secs_f64(),
     );
 
     // Save to history if specified
@@ -449,41 +444,11 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
     }
 
     // Performance profiling
-    let elapsed = start_time.elapsed();
     if args.verbose {
         eprintln!("{} {:.2}s", "⏱️  Total time:".cyan(), elapsed.as_secs_f64());
     }
 
     Ok(())
-}
-
-async fn run_interactive(args: Args, config: Config, initial_messages: Vec<Message>, system_prompt: Option<String>) -> Result<()> {
-    // Determine provider
-    let provider_str = args.provider.as_ref().unwrap_or(&config.api.provider);
-    let provider = Provider::from_string(provider_str)?;
-
-    // Get API key
-    let api_key = args.api_key.or(config.api.api_key.clone());
-
-    // Get timeout
-    let timeout = args.timeout.unwrap_or(config.api.timeout);
-
-    // Create API client
-    let client = ApiClient::new(provider, api_key, timeout)?;
-
-    // Create and run REPL
-    let mut repl = repl::Repl::new(
-        client,
-        config.clone(),
-        args.temperature,
-        args.max_tokens,
-        args.model,
-        args.stream,
-        initial_messages,
-        system_prompt,
-    );
-
-    repl.run().await
 }
 
 // Helper function to read from clipboard
