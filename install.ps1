@@ -100,24 +100,25 @@ try {
     # Check for MSVC compiler
     $ClPath = Get-Command cl -ErrorAction SilentlyContinue
     if (-not $ClPath) {
-        Write-Warning "MSVC compiler (cl.exe) not found in PATH."
+        Write-Warning "MSVC compiler (cl.exe) not found in PATH. Build may fail."
         Write-Info "Please install Visual Studio Build Tools from:"
         Write-Output "https://visualstudio.microsoft.com/visual-cpp-build-tools/"
         Write-Info "Or install Visual Studio Community with C++ workload."
-        Write-Error "Cannot proceed without C++ compiler."
-        exit 1
+        # Continue anyway, will fallback to pre-built exe
     }
 
     # Build echomind
     Write-Info "Building echomind (this may take several minutes)..."
     cargo build --release
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Build failed!"
-        exit 1
+    $BuildSuccess = $LASTEXITCODE -eq 0
+    if ($BuildSuccess) {
+        Write-Success "✓ Build completed"
+        $SourceExe = "target\release\echomind.exe"
+    } else {
+        Write-Warning "Build failed. Falling back to copying pre-built executable from repository."
+        $SourceExe = "echomind.exe"
     }
-
-    Write-Success "✓ Build completed"
 
     # Determine installation directory
     $InstallDir = "$env:USERPROFILE\.local\bin"
@@ -130,7 +131,7 @@ try {
 
     # Copy binary
     Write-Info "Installing echomind..."
-    Copy-Item -Path "target\release\echomind.exe" -Destination "$InstallDir\echomind.exe" -Force
+    Copy-Item -Path $SourceExe -Destination "$InstallDir\echomind.exe" -Force
 
     # Create documentation directory
     $DocDir = "$env:USERPROFILE\.local\share\doc\echomind"
@@ -163,6 +164,15 @@ try {
         Write-Success "✓ Installation directory is already in PATH"
     }
 
+    # Attempt to copy to System32
+    $System32Path = "C:\Windows\System32\echomind.exe"
+    try {
+        Copy-Item -Path "$InstallDir\echomind.exe" -Destination $System32Path -Force -ErrorAction Stop
+        Write-Success "✓ Copied to System32 for system-wide access"
+    } catch {
+        Write-Warning "Could not copy to System32 (requires admin privileges). Installed locally instead."
+    }
+
 }
 finally {
     # Clean up
@@ -172,7 +182,8 @@ finally {
 
 Write-Output ""
 Write-Success "╔════════════════════════════════════════╗"
-Write-Success "║  ✓ echomind installed successfully!    ║"
+Write-Success "║  ✓ Installation completed successfully! ║"
+Write-Success "║     (Any build errors were ignored)      ║"
 Write-Success "╚════════════════════════════════════════╝"
 Write-Output ""
 Write-Info "Quick Start:"
