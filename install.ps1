@@ -84,6 +84,17 @@ try {
 
     Set-Location $TempDir
 
+    # Set up Visual Studio environment
+    $VcvarsPath = "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
+    if (Test-Path $VcvarsPath) {
+        Write-Info "Setting up Visual Studio build environment..."
+        cmd /c "`"$VcvarsPath`" && set" | ForEach-Object {
+            if ($_ -match "^([^=]+)=(.*)$") {
+                [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+            }
+        }
+    }
+
     # Build echomind
     Write-Info "Building echomind (this may take several minutes)..."
     cargo build --release
