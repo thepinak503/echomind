@@ -46,10 +46,26 @@ cargo build --release
 # Binary location: target/release/echomind (or .exe on Windows)
 ```
 
-### Cross-Platform Builds
-- Linux: `cargo build --release`
-- macOS: `cargo build --release`
-- Windows: Requires MSVC; fallback to pre-built exe if build fails
+### Platform-Specific Compilation
+#### Linux
+- **Supported Distros**: Ubuntu 20.04+, Debian 11+, Arch, Fedora 35+, CentOS 8+, openSUSE 15.3+
+- **Command**: `cargo build --release`
+- **Output**: `target/release/echomind`
+- **Notes**: Ensure development tools installed (build-essential on Debian/Ubuntu)
+
+#### macOS
+- **Supported Versions**: 10.15+ (Catalina+), Intel x86_64 and Apple Silicon ARM64
+- **Command**: `cargo build --release`
+- **Output**: `target/release/echomind`
+- **Notes**: Xcode Command Line Tools required; native ARM64 support
+
+#### Windows
+- **Supported Versions**: Windows 10 1809+, Windows 11, Windows Server 2019+
+- **Prerequisites**: MSVC compiler (install Visual Studio Build Tools from https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+- **Command**: `cargo build --release`
+- **Output**: `target/release/echomind.exe`
+- **Fallback**: If MSVC unavailable, use pre-built `echomind.exe` from repo root
+- **Notes**: Run in Developer Command Prompt or use install.ps1 which handles setup
 
 ## Installation Process
 ### Automated Installers
