@@ -14,6 +14,8 @@ use colored::Colorize;
 use config::Config;
 use error::{EchomindError, Result};
 use indicatif::{ProgressBar, ProgressStyle};
+use std::net::TcpStream;
+use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::IsTerminal;
@@ -40,6 +42,12 @@ async fn main() {
 
 async fn run() -> Result<()> {
     let args = Args::parse();
+
+    // Check internet connectivity
+    if !check_internet() {
+        eprintln!("{} No internet connection detected. Please check your network and try again.", "Error:".red().bold());
+        std::process::exit(1);
+    }
 
     if args.init_config {
         return Config::init_default_config();
@@ -455,6 +463,10 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
     }
 
     Ok(())
+}
+
+fn check_internet() -> bool {
+    TcpStream::connect_timeout(&"8.8.8.8:53".parse().unwrap(), Duration::from_secs(5)).is_ok()
 }
 
 // Helper function to read from clipboard
