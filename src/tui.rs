@@ -9,7 +9,7 @@ use crossterm::{
 };
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Alignment, Constraint, Direction, Layout, Margin, Position},
+    layout::{Alignment, Constraint, Direction, Layout, Margin},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
@@ -17,6 +17,9 @@ use ratatui::{
     },
     Frame, Terminal,
 };
+use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+use serde_json;
+use std::fs;
 use std::io;
 use tokio::sync::mpsc;
 use tokio::task;
@@ -56,12 +59,13 @@ impl App {
         let top_p = args.top_p.or(config.defaults.top_p);
         let top_k = args.top_k.or(config.defaults.top_k);
         let stream = args.stream;
+        let chat = load_chat_history(&config).unwrap_or_default();
 
         Self {
             state: AppState::Input,
             input: String::new(),
             response: String::new(),
-            chat: Vec::new(),
+            chat,
             provider,
             model,
             temperature,
@@ -74,43 +78,51 @@ impl App {
             config,
             args,
         }
-    }
 
-    fn next(&mut self) {
-        self.state = match self.state {
-            AppState::Input => AppState::Processing,
-            AppState::Processing => AppState::Response,
-            AppState::Response => AppState::Input,
-        };
-    }
+fn save_chat_history(app: &App) -> Result<()> {
+    let json = serde_json::to_string(&app.chat)?;
+    let encrypted = encrypt(json.as_bytes())?;
+    let config_dir = dirs::config_dir().ok_or(crate::error::EchomindError::ConfigError("No config dir".to_string()))?.join("echomind");
+    fs::create_dir_all(&config_dir)?;
+    let path = config_dir.join("chat_history.enc");
+    fs::write(path, encrypted)?;
+    Ok(())
 }
 
-pub async fn run_tui(args: Args, config: Config) -> Result<()> {
-    // Setup terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    // Create app and run it
-    let app = App::new(config, args);
-    let res = run_app(&mut terminal, app).await;
-
-    // Restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-
-    if let Err(err) = res {
-        println!("{:?}", err)
+fn load_chat_history(config: &Config) -> Result<Vec<String>> {
+    let config_dir = dirs::config_dir().ok_or(crate::error::EchomindError::ConfigError("No config dir".to_string()))?.join("echomind");
+    let path = config_dir.join("chat_history.enc");
+    if !path.exists() {
+        return Ok(Vec::new());
     }
+    let encrypted = fs::read(path)?;
+    let decrypted = decrypt(&encrypted)?;
+    let json = String::from_utf8(decrypted)?;
+    let chat: Vec<String> = serde_json::from_str(&json)?;
+    Ok(chat)
+}
+}
 
-    Ok(())
+fn encrypt(data: &[u8]) -> Result<Vec<u8>> {
+    let key_bytes = b"01234567890123456789012345678901"; // 32 bytes for AES-256
+    let key = UnboundKey::new(&AES_256_GCM, key_bytes).map_err(|_| crate::error::EchomindError::ConfigError("Invalid key".to_string()))?;
+    let key = LessSafeKey::new(key);
+    let mut in_out = data.to_vec();
+    let nonce_bytes = [0u8; 12];
+    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+    key.seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out).map_err(|_| crate::error::EchomindError::ConfigError("Encryption failed".to_string()))?;
+    Ok(in_out)
+}
+
+fn decrypt(data: &[u8]) -> Result<Vec<u8>> {
+    let key_bytes = b"01234567890123456789012345678901";
+    let key = UnboundKey::new(&AES_256_GCM, key_bytes).map_err(|_| crate::error::EchomindError::ConfigError("Invalid key".to_string()))?;
+    let key = LessSafeKey::new(key);
+    let mut in_out = data.to_vec();
+    let nonce_bytes = [0u8; 12];
+    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+    let decrypted = key.open_in_place(nonce, Aad::empty(), &mut in_out).map_err(|_| crate::error::EchomindError::ConfigError("Decryption failed".to_string()))?;
+    Ok(decrypted.to_vec())
 }
 
 async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
@@ -183,6 +195,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
                             if !app.input.is_empty() {
                                 app.history.push(app.input.clone());
                                 app.chat.push(format!("You: {}", app.input));
+                                save_chat_history(&app).ok();
                                 app.history_index = None;
                                 app.next();
                             }
@@ -239,6 +252,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
         if let Ok(response) = rx.try_recv() {
             app.response = response.clone();
             app.chat.push(format!("{}: {}", app.provider.name(), response));
+            save_chat_history(&app).ok();
             app.state = AppState::Response;
             app.input.clear();
         }
@@ -289,8 +303,8 @@ async fn process_query(
     Ok(())
 }
 
-fn ui(f: &mut Frame, app: &mut App) {
-    let size = f.area();
+fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    let size = f.size();
 
     // Main layout: sidebar and main area
     let main_chunks = Layout::default()
@@ -341,7 +355,7 @@ fn ui(f: &mut Frame, app: &mut App) {
     let main_block = Block::default().borders(Borders::ALL).title(" Response").border_style(Style::default().fg(Color::Green));
     f.render_widget(main_block, right_chunks[1]);
 
-    let inner_area = right_chunks[1].inner(Margin { vertical: 1, horizontal: 1 });
+    let inner_area = right_chunks[1].inner(Margin::new(1, 1));
 
     match app.state {
         AppState::Input => {
@@ -373,7 +387,7 @@ fn ui(f: &mut Frame, app: &mut App) {
     let input_block = Block::default().borders(Borders::ALL).title(" Input").border_style(Style::default().fg(Color::Blue));
     f.render_widget(input_block, right_chunks[2]);
 
-    let input_area = right_chunks[2].inner(Margin { vertical: 1, horizontal: 1 });
+    let input_area = right_chunks[2].inner(Margin::new(1, 1));
     let input_para = Paragraph::new(app.input.as_str()).style(Style::default().fg(Color::White));
     f.render_widget(input_para, input_area);
 
@@ -396,9 +410,9 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     // Set cursor
     if let AppState::Input = app.state {
-        f.set_cursor_position(Position::new(
+        f.set_cursor(
             right_chunks[2].x + app.input.len() as u16 + 1,
             right_chunks[2].y + 1,
-        ));
+        );
     }
 }

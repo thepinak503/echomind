@@ -207,6 +207,7 @@ cargo fmt     # Formatting
 - **Benchmarking**: --benchmark for performance testing
 - **Collaboration**: --share, --collaborate for sharing sessions
 - **Security**: --encrypt, --audit-log for secure usage
+- **TUI Chat**: Encrypted persistent chat history in TUI mode
 
 ## Emergency Procedures
 - **Repo Corruption**: Re-clone, re-apply recent changes

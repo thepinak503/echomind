@@ -5,6 +5,7 @@ A powerful, lightweight CLI tool in Rust for AI chat APIs. Pipe input, get respo
 ## ✨ Features
 - **Multiple Providers**: OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, ChatAnywhere, ch.at
 - **Streaming & Interactive**: Real-time responses, REPL mode
+- **TUI Chat Interface**: WhatsApp-like chat with encrypted persistent history
 - **Advanced Options**: Temperature, max tokens, top_p, top_k, model selection
 - **Utilities**: Clipboard, file I/O, history, multi-model comparison
 - **Cross-Platform**: Linux, macOS, Windows
