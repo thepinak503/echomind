@@ -32,6 +32,7 @@
 - [x] Fallback installation (copy repo exe if build fails)
 - [x] System32 deployment option
 - [x] Build error handling with user-friendly messages
+- [x] Improved Visual Studio setup for multiple versions (2017-2022) and editions
 
 ### Code Quality
 - [x] Rust best practices
