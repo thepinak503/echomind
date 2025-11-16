@@ -22,7 +22,11 @@ Write-Info "=== Echomind Installer for Windows ==="
 Write-Output ""
 
 # Detect architecture
-$Arch = [System.Environment]::Is64BitOperatingSystem ? "x64" : "x86"
+if ([System.Environment]::Is64BitOperatingSystem) {
+    $Arch = "x64"
+} else {
+    $Arch = "x86"
+}
 Write-Info "Detected Architecture: $Arch"
 
 # Note: Using pre-built binary, no need for Rust
