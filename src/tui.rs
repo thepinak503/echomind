@@ -307,13 +307,14 @@ fn ui(f: &mut Frame, app: &mut App) {
         .highlight_style(Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow));
     f.render_widget(history_list, main_chunks[0]);
 
-    // Right area: settings, response/input
+    // Right area: settings, response/input, footer
     let right_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3), // Settings
             Constraint::Min(1),    // Main area
             Constraint::Length(3), // Input
+            Constraint::Length(1), // Footer
         ])
         .split(main_chunks[1]);
 
@@ -340,7 +341,7 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     match app.state {
         AppState::Input => {
-            let text = "Enter your prompt and press Enter...\nUse ↑/↓ for history, Ctrl+T for temp, Ctrl+S for stream, Ctrl+H for clear history, Ctrl+R for clear response, Ctrl+Q or Esc to exit";
+            let text = "Enter your prompt and press Enter...";
             let para = Paragraph::new(text)
                 .alignment(Alignment::Center)
                 .style(Style::default().fg(Color::Gray))
@@ -369,6 +370,23 @@ fn ui(f: &mut Frame, app: &mut App) {
     let input_area = right_chunks[2].inner(Margin { vertical: 1, horizontal: 1 });
     let input_para = Paragraph::new(app.input.as_str()).style(Style::default().fg(Color::White));
     f.render_widget(input_para, input_area);
+
+    // Footer with shortcuts
+    let footer_text = Line::from(vec![
+        Span::styled("^T", Style::default().fg(Color::Black).bg(Color::White)),
+        Span::raw(" Temp  "),
+        Span::styled("^S", Style::default().fg(Color::Black).bg(Color::White)),
+        Span::raw(" Stream  "),
+        Span::styled("^H", Style::default().fg(Color::Black).bg(Color::White)),
+        Span::raw(" Clear Hist  "),
+        Span::styled("^R", Style::default().fg(Color::Black).bg(Color::White)),
+        Span::raw(" Clear Resp  "),
+        Span::styled("^Q", Style::default().fg(Color::Black).bg(Color::White)),
+        Span::raw(" Quit"),
+    ]);
+    let footer = Paragraph::new(footer_text)
+        .style(Style::default().bg(Color::White).fg(Color::Black));
+    f.render_widget(footer, right_chunks[3]);
 
     // Set cursor
     if let AppState::Input = app.state {
