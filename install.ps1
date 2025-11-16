@@ -21,11 +21,14 @@ function Write-Error { Write-ColorOutput Red $args }
 Write-Info "=== Echomind Installer for Windows ==="
 Write-Output ""
 
-# Detect architecture
-if ([System.Environment]::Is64BitOperatingSystem) {
+# Detect architecture and set Rust URL
+$Is64Bit = [System.Environment]::Is64BitOperatingSystem
+if ($Is64Bit) {
     $Arch = "x64"
+    $RustupUrl = "https://win.rustup.rs/x86_64"
 } else {
     $Arch = "x86"
+    $RustupUrl = "https://win.rustup.rs/i686"
 }
 Write-Info "Detected Architecture: $Arch"
 
@@ -37,7 +40,6 @@ if (-not $RustInstalled) {
     Write-Info "Installing Rust..."
 
     # Download and install rustup
-    $RustupUrl = "https://win.rustup.rs/x86_64"
     $RustupInstaller = "$env:TEMP\rustup-init.exe"
 
     Write-Info "Downloading Rust installer..."
@@ -93,6 +95,17 @@ try {
                 [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
             }
         }
+    }
+
+    # Check for MSVC compiler
+    $ClPath = Get-Command cl -ErrorAction SilentlyContinue
+    if (-not $ClPath) {
+        Write-Warning "MSVC compiler (cl.exe) not found in PATH."
+        Write-Info "Please install Visual Studio Build Tools from:"
+        Write-Output "https://visualstudio.microsoft.com/visual-cpp-build-tools/"
+        Write-Info "Or install Visual Studio Community with C++ workload."
+        Write-Error "Cannot proceed without C++ compiler."
+        exit 1
     }
 
     # Build echomind
