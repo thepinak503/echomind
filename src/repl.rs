@@ -88,6 +88,8 @@ impl Repl {
                         model: Some(self.model.clone()),
                         temperature: Some(self.temperature),
                         max_tokens: self.max_tokens,
+                        top_p: None,
+                        top_k: None,
                         stream: if self.stream { Some(true) } else { None },
                     };
 

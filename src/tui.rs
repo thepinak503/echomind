@@ -1,19 +1,19 @@
 use crate::api::{ApiClient, ChatRequest, Message, Provider};
 use crate::cli::Args;
 use crate::config::Config;
-use crate::error::{EchomindError, Result};
+use crate::error::Result;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Margin, Position},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
-        Block, Borders, Clear, Gauge, List, ListItem, ListState, Paragraph, Tabs, Wrap,
+        Block, Borders, Gauge, List, ListItem, Paragraph, Wrap,
     },
     Frame, Terminal,
 };
@@ -41,6 +41,7 @@ struct App {
     top_k: Option<u32>,
     stream: bool,
     history: Vec<String>,
+    history_index: Option<usize>,
     config: Config,
     args: Args,
 }
@@ -67,6 +68,7 @@ impl App {
             top_k,
             stream,
             history: Vec::new(),
+            history_index: None,
             config,
             args,
         }
@@ -127,11 +129,12 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
             let stream = app.stream;
             let config = app.config.clone();
             let args = app.args.clone();
-            let tx = tx.clone();
+            let tx_process = tx.clone();
+            let tx_error = tx.clone();
 
             task::spawn(async move {
-                if let Err(e) = process_query(input, provider, model, temperature, max_tokens, top_p, top_k, stream, config, args, tx).await {
-                    let _ = tx.send(format!("Error: {:?}", e));
+                if let Err(e) = process_query(input, provider, model, temperature, max_tokens, top_p, top_k, stream, config, args, tx_process).await {
+                    let _ = tx_error.send(format!("Error: {:?}", e));
                 }
             });
 
@@ -140,30 +143,87 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
 
         if let Ok(event) = event::read() {
             match event {
-                Event::Key(key) => match key.code {
-                    KeyCode::Enter => {
-                        if let AppState::Input = app.state {
-                            if !app.input.is_empty() {
-                                app.history.push(app.input.clone());
-                                app.next();
+                Event::Key(key) => {
+                    if key.modifiers.contains(KeyModifiers::CONTROL) {
+                        match key.code {
+                            KeyCode::Char('t') => {
+                                // Cycle temperature
+                                app.temperature = match app.temperature {
+                                    0.1 => 0.5,
+                                    0.5 => 1.0,
+                                    _ => 0.1,
+                                };
                             }
+                            KeyCode::Char('s') => {
+                                // Toggle stream
+                                app.stream = !app.stream;
+                            }
+                            KeyCode::Char('h') => {
+                                // Clear history
+                                app.history.clear();
+                                app.history_index = None;
+                            }
+                            KeyCode::Char('r') => {
+                                // Clear response
+                                app.response.clear();
+                                app.state = AppState::Input;
+                            }
+                            _ => {}
+                        }
+                    } else {
+                        match key.code {
+                            KeyCode::Enter => {
+                                if let AppState::Input = app.state {
+                                    if !app.input.is_empty() {
+                                        app.history.push(app.input.clone());
+                                        app.history_index = None;
+                                        app.next();
+                                    }
+                                }
+                            }
+                            KeyCode::Char(c) => {
+                                if let AppState::Input = app.state {
+                                    app.input.push(c);
+                                    app.history_index = None; // Reset history navigation on typing
+                                }
+                            }
+                            KeyCode::Backspace => {
+                                if let AppState::Input = app.state {
+                                    app.input.pop();
+                                    app.history_index = None; // Reset history navigation on typing
+                                }
+                            }
+                            KeyCode::Up => {
+                                if let AppState::Input = app.state {
+                                    if !app.history.is_empty() {
+                                        let idx = app.history_index.unwrap_or(app.history.len());
+                                        if idx > 0 {
+                                            app.history_index = Some(idx - 1);
+                                            app.input = app.history[app.history_index.unwrap()].clone();
+                                        }
+                                    }
+                                }
+                            }
+                            KeyCode::Down => {
+                                if let AppState::Input = app.state {
+                                    if let Some(idx) = app.history_index {
+                                        if idx + 1 < app.history.len() {
+                                            app.history_index = Some(idx + 1);
+                                            app.input = app.history[idx + 1].clone();
+                                        } else {
+                                            app.history_index = None;
+                                            app.input.clear();
+                                        }
+                                    }
+                                }
+                            }
+                            KeyCode::Esc => {
+                                return Ok(());
+                            }
+                            _ => {}
                         }
                     }
-                    KeyCode::Char(c) => {
-                        if let AppState::Input = app.state {
-                            app.input.push(c);
-                        }
-                    }
-                    KeyCode::Backspace => {
-                        if let AppState::Input = app.state {
-                            app.input.pop();
-                        }
-                    }
-                    KeyCode::Esc => {
-                        return Ok(());
-                    }
-                    _ => {}
-                },
+                }
                 _ => {}
             }
         }
@@ -193,7 +253,7 @@ async fn process_query(
     let api_key = args.api_key.or(config.api.api_key.clone());
     let timeout = args.timeout.unwrap_or(config.api.timeout);
 
-    let mut client = ApiClient::new(provider, api_key, timeout)?;
+    let client = ApiClient::new(provider, api_key, timeout)?;
 
     let messages = vec![Message::text("user".to_string(), input)];
 
@@ -221,74 +281,96 @@ async fn process_query(
     Ok(())
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let size = f.size();
+fn ui(f: &mut Frame, app: &mut App) {
+    let size = f.area();
 
-    let chunks = Layout::default()
+    // Main layout: sidebar and main area
+    let main_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(25), Constraint::Percentage(75)])
+        .split(size);
+
+    // Sidebar: History
+    let history_items: Vec<ListItem> = app
+        .history
+        .iter()
+        .rev()
+        .take(10)
+        .map(|h| ListItem::new(h.as_str()))
+        .collect();
+    let history_list = List::new(history_items)
+        .block(Block::default().borders(Borders::ALL).title(" History").border_style(Style::default().fg(Color::Cyan)))
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow));
+    f.render_widget(history_list, main_chunks[0]);
+
+    // Right area: settings, response/input
+    let right_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3), // Tabs/Settings
+            Constraint::Length(3), // Settings
             Constraint::Min(1),    // Main area
             Constraint::Length(3), // Input
         ])
-        .split(size);
+        .split(main_chunks[1]);
 
     // Settings bar
     let settings = vec![
-        format!("Provider: {}", app.provider.name()),
-        format!("Model: {}", app.model),
-        format!("Temp: {:.1}", app.temperature),
-        format!("Max Tokens: {}", app.max_tokens.unwrap_or(2000)),
-        format!("Top P: {:.2}", app.top_p.unwrap_or(1.0)),
-        format!("Top K: {}", app.top_k.unwrap_or(0)),
-        format!("Stream: {}", app.stream),
+        Span::styled(format!("Provider: {}", app.provider.name()), Style::default().fg(Color::Green)),
+        Span::raw(" | "),
+        Span::styled(format!("Model: {}", app.model), Style::default().fg(Color::Blue)),
+        Span::raw(" | "),
+        Span::styled(format!("Temp: {:.1}", app.temperature), Style::default().fg(Color::Red)),
+        Span::raw(" | "),
+        Span::styled(format!("Stream: {}", if app.stream { "On" } else { "Off" }), Style::default().fg(Color::Magenta)),
     ];
-    let settings_text = settings.join(" | ");
-    let settings_para = Paragraph::new(settings_text)
-        .block(Block::default().borders(Borders::ALL).title("Settings"));
-    f.render_widget(settings_para, chunks[0]);
+    let settings_line = Line::from(settings);
+    let settings_para = Paragraph::new(settings_line)
+        .block(Block::default().borders(Borders::ALL).title(" Settings").border_style(Style::default().fg(Color::White)));
+    f.render_widget(settings_para, right_chunks[0]);
 
     // Main area
-    let main_block = Block::default().borders(Borders::ALL).title("Response");
-    f.render_widget(main_block, chunks[1]);
+    let main_block = Block::default().borders(Borders::ALL).title(" Response").border_style(Style::default().fg(Color::Green));
+    f.render_widget(main_block, right_chunks[1]);
 
-    let inner_area = chunks[1].inner(&Margin { vertical: 1, horizontal: 1 });
+    let inner_area = right_chunks[1].inner(Margin { vertical: 1, horizontal: 1 });
 
     match app.state {
         AppState::Input => {
-            let text = "Enter your prompt and press Enter...";
+            let text = "Enter your prompt and press Enter...\nUse ↑/↓ for history, Ctrl+T for temp, Ctrl+S for stream";
             let para = Paragraph::new(text)
                 .alignment(Alignment::Center)
+                .style(Style::default().fg(Color::Gray))
                 .wrap(Wrap { trim: true });
             f.render_widget(para, inner_area);
         }
         AppState::Processing => {
             let gauge = Gauge::default()
-                .block(Block::default().borders(Borders::ALL).title("Processing"))
+                .block(Block::default().borders(Borders::ALL).title(" Processing").border_style(Style::default().fg(Color::Yellow)))
                 .gauge_style(Style::default().fg(Color::Yellow))
                 .percent(50);
             f.render_widget(gauge, inner_area);
         }
         AppState::Response => {
             let para = Paragraph::new(app.response.as_str())
+                .style(Style::default().fg(Color::White))
                 .wrap(Wrap { trim: true });
             f.render_widget(para, inner_area);
         }
     }
 
     // Input area
-    let input_block = Block::default().borders(Borders::ALL).title("Input");
-    f.render_widget(input_block, chunks[2]);
+    let input_block = Block::default().borders(Borders::ALL).title(" Input").border_style(Style::default().fg(Color::Blue));
+    f.render_widget(input_block, right_chunks[2]);
 
-    let input_area = chunks[2].inner(&Margin { vertical: 1, horizontal: 1 });
-    let input_para = Paragraph::new(app.input.as_str());
+    let input_area = right_chunks[2].inner(Margin { vertical: 1, horizontal: 1 });
+    let input_para = Paragraph::new(app.input.as_str()).style(Style::default().fg(Color::White));
     f.render_widget(input_para, input_area);
 
     // Set cursor
     if let AppState::Input = app.state {
-        f.set_cursor(
-            chunks[2].x + app.input.len() as u16 + 1,
-            chunks[2].y + 1,
-        );
+        f.set_cursor_position(Position::new(
+            right_chunks[2].x + app.input.len() as u16 + 1,
+            right_chunks[2].y + 1,
+        ));
     }
 }

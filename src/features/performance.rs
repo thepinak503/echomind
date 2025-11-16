@@ -84,6 +84,8 @@ impl PerformanceMonitor {
             model: Some(model.to_string()),
             temperature: Some(0.7),
             max_tokens: Some(1000),
+            top_p: None,
+            top_k: None,
             stream: None,
         };
         

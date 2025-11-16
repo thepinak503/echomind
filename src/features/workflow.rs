@@ -187,6 +187,8 @@ impl WorkflowManager {
                     model: step.model.clone(),
                     temperature: step.temperature,
                     max_tokens: step.max_tokens,
+                    top_p: None,
+                    top_k: None,
                     stream: None,
                 };
                 

@@ -5,6 +5,7 @@ mod error;
 mod repl;
 mod tui;
 
+use crate::tui::run_tui;
 use api::{ApiClient, ChatRequest, Message, Provider/*, ContentPart, ImageUrl*/};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
@@ -437,15 +438,15 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
     }
 
     // Display metrics
-    print_metrics_table(
-        provider_str,
-        &model,
-        request.temperature,
-        request.max_tokens,
-        request.top_p,
-        request.top_k,
-        elapsed.as_secs_f64(),
-    );
+    // print_metrics_table(
+    //     provider_str,
+    //     &model,
+    //     request.temperature,
+    //     request.max_tokens,
+    //     request.top_p,
+    //     request.top_k,
+    //     elapsed.as_secs_f64(),
+    // );
 
     // Save to history if specified
     if let Some(history_file) = &args.history {
@@ -628,6 +629,8 @@ async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Con
                 model: Some(actual_model.to_string()),
                 temperature: args.temperature.or(Some(config.defaults.temperature)),
                 max_tokens: args.max_tokens.or(config.defaults.max_tokens),
+                top_p: None,
+                top_k: None,
                 stream: None,
             };
 
@@ -669,4 +672,26 @@ async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Con
     }
 
     Ok(())
+}
+
+pub async fn run_interactive(args: Args, config: Config, initial_messages: Vec<Message>, system_prompt: Option<String>) -> Result<()> {
+    let api_key = args.api_key.or(config.api.api_key.clone());
+    let timeout = args.timeout.unwrap_or(config.api.timeout);
+    let provider = if let Some(p_str) = &args.provider {
+        Provider::from_string(p_str).unwrap_or(Provider::Chat)
+    } else {
+        Provider::from_string(&config.api.provider).unwrap_or(Provider::Chat)
+    };
+    let client = ApiClient::new(provider, api_key, timeout)?;
+    let mut repl = repl::Repl::new(
+        client,
+        config,
+        args.temperature,
+        args.max_tokens,
+        args.model.clone(),
+        args.stream,
+        initial_messages,
+        system_prompt,
+    );
+    repl.run().await
 }
