@@ -49,7 +49,7 @@
 - [x] Platform-specific compilation details
 
 ## Pending Features (Future)
-- [ ] GUI interface
+- [ ] TUI interface
 - [ ] Plugin system
 - [ ] Cloud deployment
 - [ ] Advanced analytics
