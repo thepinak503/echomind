@@ -3,6 +3,7 @@ mod cli;
 mod config;
 mod error;
 mod repl;
+mod tui;
 
 use api::{ApiClient, ChatRequest, Message, Provider/*, ContentPart, ImageUrl*/};
 use arboard::Clipboard;
@@ -66,6 +67,11 @@ async fn run() -> Result<()> {
         } else {
             return Err(EchomindError::ConfigError(format!("Preset '{}' not found in config.", preset_name)));
         }
+    }
+
+    // Check if we're in TUI mode
+    if args.tui {
+        return run_tui(args, config).await;
     }
 
     // Check if we're in interactive mode

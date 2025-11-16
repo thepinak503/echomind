@@ -78,6 +78,10 @@ pub struct Args {
     #[arg(short = 'i', long)]
     pub interactive: bool,
 
+    /// Text User Interface mode
+    #[arg(long)]
+    pub tui: bool,
+
     /// API key for the provider (can also be set via ECHOMIND_API_KEY env var)
     #[arg(long)]
     pub api_key: Option<String>,
