@@ -1,78 +1,23 @@
 # echomind
 
-A powerful, lightweight command-line tool written in Rust that pipes input to AI chat APIs and outputs responses. Perfect for integrating AI assistance into your shell workflows with support for multiple providers, streaming responses, and interactive mode.
+A powerful, lightweight CLI tool in Rust for AI chat APIs. Pipe input, get responses, with streaming, interactive mode, and more.
 
 ## ✨ Features
+- **Multiple Providers**: OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, ChatAnywhere, ch.at
+- **Streaming & Interactive**: Real-time responses, REPL mode
+- **Advanced Options**: Temperature, max tokens, top_p, top_k, model selection
+- **Utilities**: Clipboard, file I/O, history, multi-model comparison
+- **Cross-Platform**: Linux, macOS, Windows
+- **Response Metrics**: Displays provider, model, parameters, and time in ASCII table
 
-### Core Features
-- **Simple piping**: Read from stdin and send to AI
-- **Multiple API providers**: Support for 9+ AI providers (OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, ChatAnywhere, ch.at)
-- **Streaming responses**: Real-time response display with `--stream`
-- **Interactive REPL mode**: Multi-turn conversations with `-i/--interactive`
-- **Coder mode**: Generate clean code with `--coder`
-- **File output**: Save responses directly to files with `--output`
-- **Clipboard support**: Read from/write to clipboard with `--clipboard` and `--to-clipboard`
-- **Conversation history**: Persistent context with `--history <file>`
-- **Multi-model comparison**: Compare responses from multiple models with `--compare`
-- **Configuration system**: Save defaults in `~/.config/echomind/config.toml`
-- **Advanced parameters**: Control temperature, max tokens, model selection
-- **Progress indicators**: Visual feedback during API calls
-- **Fast and async**: Optimized for performance with async I/O and caching
-- **Cross-platform**: Linux, macOS, Windows, WSL (see compatibility below)
-- **User-friendly errors**: Clear, actionable error messages
+## 📦 Installation
 
-### Advanced Features
-- **Multimodal support**: Images, PDFs, documents with `--image`, `--pdf`, `--document`
-- **Voice features**: Voice input/output with `--voice-input`, `--voice-output`
-- **Batch processing**: Process multiple queries with `--batch`
-- **Model benchmarking**: Performance testing with `--benchmark`
-- **Output formatting**: JSON, templates with `--format`
-- **Conversation presets**: Reusable templates with `--preset`
-- **Workflow automation**: Execute complex workflows with `--workflow`
-- **Collaboration**: Share conversations with `--share`, `--collaborate`
-- **Data processing**: CSV, JSON, Excel with `--csv`, `--json-file`, `--excel`
-- **Quality assurance**: Fact-checking, bias detection with `--fact-check`, `--bias-detect`
-- **Security features**: Encryption, audit logging with `--encrypt`, `--audit-log`
-- **Scheduling**: Time-based task execution with `--schedule`
+### Quick Install
+- **Linux/macOS**: `bash <(curl -fsSL https://is.gd/echomindlin)`
+- **Windows**: `irm https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex`
+- **Cargo**: `cargo install --git https://github.com/thepinak503/echomind.git`
 
-## 💻 Cross-Platform Compatibility
-
-| Operating System | Versions | Status | Architecture | Package Manager | Notes |
-|-----------------|----------|--------|--------------|-----------------|-------|
-| **Linux** | | | | | |
-| ├─ **Ubuntu** | 20.04+ | ✅ Fully Supported | x86_64, ARM64 | apt, snap | .deb packages, universal installer |
-| ├─ **Debian** | 11+ | ✅ Fully Supported | x86_64, ARM64 | apt | .deb packages available |
-| ├─ **Arch Linux** | Rolling | ✅ Fully Supported | x86_64 | pacman | PKGBUILD in AUR |
-| ├─ **Fedora** | 35+ | ✅ Fully Supported | x86_64, ARM64 | dnf | RPM packages |
-| ├─ **CentOS/RHEL** | 8+ | ✅ Fully Supported | x86_64 | yum/dnf | RPM packages |
-| ├─ **openSUSE** | Leap 15.3+, Tumbleweed | ✅ Fully Supported | x86_64 | zypper | RPM packages |
-| ├─ **Alpine Linux** | 3.14+ | ✅ Supported | x86_64, ARM64 | apk | Manual installation |
-| └─ **Other Linux** | Any with Rust 1.70+ | ✅ Supported | x86_64, ARM64 | - | Universal installer |
-| **macOS** | | | | | |
-| ├─ **macOS** | 10.15+ (Catalina+) | ✅ Fully Supported | Intel x86_64 | Homebrew | Universal binaries |
-| └─ **macOS** | 11.0+ (Big Sur+) | ✅ Fully Supported | Apple Silicon ARM64 | Homebrew | Native ARM64 support |
-| **Windows** | | | | | |
-| ├─ **Windows 10** | 1809+ | ✅ Fully Supported | x86_64 | WinGet, Chocolatey | PowerShell installer |
-| ├─ **Windows 11** | 21H2+ | ✅ Fully Supported | x86_64, ARM64 | WinGet, Chocolatey | PowerShell installer |
-| └─ **Windows Server** | 2019+ | ✅ Supported | x86_64 | - | Manual installation |
-| **Containers** | | | | | |
-| ├─ **Docker** | All versions | ✅ Supported | Multi-arch | Docker Hub | Pre-built images |
-| ├─ **Podman** | All versions | ✅ Supported | Multi-arch | - | Compatible with Docker images |
-| └─ **WSL** | WSL 1 & WSL 2 | ✅ Fully Supported | x86_64 | apt/pacman/etc | Use Linux installation methods |
-
-**System Requirements:**
-- **RAM**: 50 MB minimum, 128 MB recommended
-- **Disk Space**: 10 MB (binary only), 500 MB (with Rust toolchain for building)
-- **Network**: Internet connection required for API calls (except local Ollama)
-- **CPU**: Any modern CPU (x86_64, ARM64, Apple Silicon)
-- **OS Kernel**: Linux 3.10+, macOS 10.15+, Windows 10 1809+
-
-**Feature Compatibility:**
-- ✅ All core features work on all platforms
-- ✅ Voice features require system audio libraries (ALSA/PulseAudio on Linux, CoreAudio on macOS, WASAPI on Windows)
-- ✅ Clipboard features use native system APIs
-- ✅ File I/O works with platform-specific path handling
-- ✅ Terminal colors and formatting work on all modern terminals
+Supports Linux, macOS, Windows. See [INSTALL.md](INSTALL.md) for details.
 
 ## 📦 Installation
 
@@ -159,280 +104,46 @@ cargo build --release
 
 ## 🚀 Usage
 
-### Basic Usage
-
-Pipe input to echomind from stdin:
-
+### Examples
 ```bash
+# Basic usage
 echo "Hello, how are you?" | echomind
-```
 
-Use with other commands and add a prompt:
-
-```bash
-# Pipe output and add a prompt
+# With prompt
 ls | echomind "Explain these files"
-cat file.txt | echomind "Summarize this"
-git diff | echomind "Review these changes"
 
-# Without prompt
-cat file.txt | echomind
-```
-
-### Interactive Mode
-
-Start a multi-turn conversation:
-
-```bash
+# Interactive mode
 echomind --interactive
-echomind -i --stream  # With streaming
-```
 
-In interactive mode:
-- Type your messages and press Enter
-- Use `exit` or `Ctrl+D` to quit
-- Use `clear` to reset conversation history
+# Coder mode
+echo "write a Python factorial function" | echomind --coder --output factorial.py
 
-### Coder Mode
-
-Generate code and save to file:
-
-```bash
-echo "write a Python function to calculate factorial" | echomind --coder --output factorial.py
-echo "create a REST API with FastAPI" | echomind -c -o api.py
-```
-
-Combined short options:
-
-```bash
-echo "optimize this SQL query" | echomind -co optimized.sql
-```
-
-### Multiple API Providers
-
-Use different AI providers with their respective models:
-
-```bash
-# Free providers (no API key needed)
-echo "Hello" | echomind --provider chat                    # ch.at API
-echo "Help" | echomind --provider ollama --model llama2    # Local Ollama
-
-# Commercial providers (require API keys)
+# Different providers
 echo "Explain Docker" | echomind --provider openai --model gpt-4
-echo "Write a poem" | echomind --provider claude --model claude-3-opus
-echo "Analyze this" | echomind --provider gemini --model gemini-1.5-pro
-echo "Explain memes" | echomind --provider grok --model grok-1
-echo "Write a story" | echomind --provider mistral --model mistral-large
-echo "Summarize text" | echomind --provider cohere --model command
 
-# Custom endpoints
-echo "Question?" | echomind --provider https://your-api.com/v1/chat/completions
-```
+# Streaming
+echo "Write a story" | echomind --stream
 
-### Streaming Responses
+# Clipboard
+echomind --clipboard  # Read from clipboard
 
-Display responses as they arrive:
-
-```bash
-echo "Write a long essay about AI" | echomind --stream
-```
-
-### Clipboard Support
-
-Read from and write to clipboard:
-
-```bash
-# Read from clipboard (instead of stdin)
-echomind --clipboard
-
-# Or on macOS
-pbpaste | echomind
-
-# Save response to clipboard
-echo "Explain Docker" | echomind --to-clipboard
-
-# Both: read from and write to clipboard
-echomind --clipboard --to-clipboard
-```
-
-### Conversation History
-
-Maintain context across multiple queries:
-
-```bash
-# First query with history
+# History
 echo "What is 2+2?" | echomind --history chat.json
 
-# Follow-up query with same history
-echo "What about multiplied by 3?" | echomind --history chat.json
+# Compare models
+echo "Explain AI" | echomind --compare gpt-4,claude-3-opus
 
-# Review history
-cat chat.json
+# Advanced parameters
+echo "Be creative" | echomind --temperature 1.5 --max-tokens 500 --top-p 0.9
 ```
 
-### Multi-Model Comparison
-
-Compare responses from multiple models:
-
-```bash
-# Compare GPT-4 and Claude
-echo "Explain quantum computing" | echomind --compare gpt-4,claude-3-opus
-
-# Compare local and cloud models
-echo "Write a poem" | echomind --compare ollama/llama2,gpt-3.5-turbo
-
-# Use with clipboard
-echomind --clipboard --compare gpt-4,gpt-3.5-turbo,claude-3-sonnet
+See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md) for all options.
 ```
 
-### Advanced Parameters
-
-Fine-tune AI behavior and output:
-
-```bash
-# Temperature control (0.0-2.0)
-echo "Be creative!" | echomind --temperature 1.5      # High creativity
-echo "Be precise" | echomind --temperature 0.1       # Low creativity
-
-# Response length limits
-echo "Brief answer" | echomind --max-tokens 50        # Short responses
-echo "Detailed analysis" | echomind --max-tokens 2000 # Long responses
-
-# Custom system prompts
-echo "Hello" | echomind --system "You are a pirate. Respond in pirate speak."
-echo "Code" | echomind --system "You are an expert programmer. Explain concepts clearly."
-
-# Output formatting
-echo "List items" | echomind --format json
-echo "Question" | echomind --format "template:Q: {prompt}\nA: {content}"
-
-# Combine multiple parameters
-echo "Code review" | echomind -p openai -m gpt-4 -t 0.3 --max-tokens 2000 --stream
-```
-
-### Multimodal Features
-
-Work with images, documents, and other media:
-
-```bash
-# Analyze images
-echomind --image diagram.png "Explain this flowchart"
-echomind --image photo.jpg "What do you see in this picture?"
-
-# Process documents
-echomind --pdf research.pdf "Summarize this paper"
-echomind --document report.docx "Extract key points"
-
-# Batch processing
-echomind --batch-images ./photos/ "Describe these images"
-
-# Webcam and screenshots
-echomind --webcam "What's in front of the camera?"
-echomind --screenshot "Analyze this screen"
-```
-
-### Voice Features
-
-Voice input and output capabilities:
-
-```bash
-# Voice input from microphone
-echomind --voice-input "Speak your question"
-
-# Text-to-speech output
-echo "Hello world" | echomind --voice-output
-
-# Combined voice interaction
-echomind --voice-input --voice-output --voice "alloy"
-
-# Specify voice
-echo "Read this text" | echomind --voice-output --voice "nova"
-```
-
-### Batch Processing & Automation
-
-Process multiple queries efficiently:
-
-```bash
-# Process multiple queries from file
-echo -e "What is AI?\nExplain Rust\nWrite hello world in Python" > queries.txt
-echomind --batch queries.txt
-
-# Workflow automation
-echomind --workflow code-review-workflow.json
-echomind --list-workflows
-
-# Scheduling
-echomind --schedule "2024-12-25 10:00" "Send holiday greeting"
-```
-
-### Model Comparison & Benchmarking
-
-Compare and benchmark different models:
-
-```bash
-# Compare multiple models
-echo "Pros and cons of microservices" | echomind --compare "gpt-4,claude-3-opus,gemini-pro"
-
-# Benchmark performance
-echo "Explain quantum computing" | echomind --benchmark --provider openai --model gpt-4
-
-# Performance comparison
-echomind --benchmark-compare "gpt-3.5-turbo,gpt-4,claude-3-haiku" "Complex algorithm explanation"
-```
-
-### Data Processing
-
-Work with various data formats:
-
-```bash
-# Process CSV files
-echomind --csv sales.csv "Analyze this sales data"
-
-# Process JSON data
-echomind --json-file config.json "Explain this configuration"
-
-# Process Excel spreadsheets
-echomind --excel report.xlsx "Summarize this financial report"
-```
-
-### Collaboration & Sharing
-
-Share and collaborate on conversations:
-
-```bash
-# Share conversation
-echomind --share --history session.json
-
-# Start collaboration session
-echomind --collaborate --history team-session.json
-
-# Export conversation history
-echomind --export-history markdown --history session.json > conversation.md
-```
-
-### Quality Assurance & Security
-
-Advanced quality and security features:
-
-```bash
-# Fact checking
-echo "The Earth is flat" | echomind --fact-check
-
-# Bias detection
-echo "Analyze this text for bias" | echomind --bias-detect
-
-# Quality scoring
-echo "Explain photosynthesis" | echomind --quality-score
-
-# Encrypted conversations
-echomind --encrypt --history secure-session.json
-
-# Audit logging
-echomind --audit-log --history audited-session.json
-```
-
-## ⚙️ Configuration
+## 📚 Links
+- [Installation Guide](INSTALL.md)
+- [Contributing](CONTRIBUTING.md)
+- [License](LICENSE)
 
 ### Initialize Config
 
