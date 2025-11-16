@@ -87,14 +87,35 @@ try {
     Set-Location $TempDir
 
     # Set up Visual Studio environment
-    $VcvarsPath = "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
-    if (Test-Path $VcvarsPath) {
+    $VcvarsPaths = @(
+        "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat",
+        "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat",
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat",
+        "C:\Program Files\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat",
+        "C:\Program Files\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvars64.bat",
+        "C:\Program Files\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat",
+        "C:\Program Files\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat",
+        "C:\Program Files\Microsoft Visual Studio\2017\Professional\VC\Auxiliary\Build\vcvars64.bat",
+        "C:\Program Files\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+    )
+
+    $VcvarsPath = $null
+    foreach ($path in $VcvarsPaths) {
+        if (Test-Path $path) {
+            $VcvarsPath = $path
+            break
+        }
+    }
+
+    if ($VcvarsPath) {
         Write-Info "Setting up Visual Studio build environment..."
         cmd /c "`"$VcvarsPath`" && set" | ForEach-Object {
             if ($_ -match "^([^=]+)=(.*)$") {
                 [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
             }
         }
+    } else {
+        Write-Warning "Visual Studio build tools not found. Build may fail."
     }
 
     # Check for MSVC compiler
