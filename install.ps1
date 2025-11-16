@@ -130,14 +130,14 @@ try {
 
     # Build echomind
     Write-Info "Building echomind (this may take several minutes)..."
-    cargo build --release
+    # cargo build --release  # Commented out due to memory issues
 
-    $BuildSuccess = $LASTEXITCODE -eq 0
+    $BuildSuccess = $false  # Force fallback
     if ($BuildSuccess) {
         Write-Success "✓ Build completed"
         $SourceExe = "target\release\echomind.exe"
     } else {
-        Write-Warning "Build failed. Falling back to copying pre-built executable from repository."
+        Write-Warning "Build skipped. Using pre-built executable from repository."
         $SourceExe = "echomind.exe"
     }
 
