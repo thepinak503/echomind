@@ -102,6 +102,10 @@ pub struct Args {
     #[arg(long)]
     pub show_config: bool,
 
+    /// List all available AI providers
+    #[arg(long)]
+    pub list_providers: bool,
+
     /// Read input from clipboard instead of stdin
     #[arg(long)]
     pub clipboard: bool,

@@ -336,7 +336,7 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     match app.state {
         AppState::Input => {
-            let text = "Enter your prompt and press Enter...\nUse ↑/↓ for history, Ctrl+T for temp, Ctrl+S for stream";
+            let text = "Enter your prompt and press Enter...\nUse ↑/↓ for history, Ctrl+T for temp, Ctrl+S for stream, Ctrl+H for clear history, Ctrl+R for clear response, Esc to exit";
             let para = Paragraph::new(text)
                 .alignment(Alignment::Center)
                 .style(Style::default().fg(Color::Gray))

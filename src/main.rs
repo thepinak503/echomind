@@ -60,6 +60,21 @@ async fn run() -> Result<()> {
         return Ok(());
     }
 
+    if args.list_providers {
+        println!("Available AI providers:");
+        println!("- chat");
+        println!("- chatanywhere");
+        println!("- openai");
+        println!("- claude");
+        println!("- ollama");
+        println!("- grok");
+        println!("- mistral");
+        println!("- cohere");
+        println!("- gemini");
+        println!("- custom:<url>");
+        return Ok(());
+    }
+
     let config = Config::load()?;
 
     let mut initial_messages: Vec<Message> = Vec::new();
