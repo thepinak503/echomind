@@ -110,9 +110,9 @@ pub struct Args {
     #[arg(long)]
     pub format: Option<String>,
 
-    /// Image file to include with the request (for vision models)
-    #[arg(long)]
-    pub image: Option<String>,
+    // /// Image file to include with the request (for vision models)
+    // #[arg(long)]
+    // pub image: Option<String>,
 
     /// Optional prompt to append to input (useful when piping)
     #[arg(value_name = "PROMPT")]
@@ -126,18 +126,18 @@ pub struct Args {
     #[arg(long)]
     pub batch: Option<String>,
 
-    // Voice features
-    /// Enable voice input from microphone
-    #[arg(long)]
-    pub voice_input: bool,
+    // Voice features (disabled)
+    // /// Enable voice input from microphone
+    // #[arg(long)]
+    // pub voice_input: bool,
 
-    /// Convert AI response to speech
-    #[arg(long)]
-    pub voice_output: bool,
+    // /// Convert AI response to speech
+    // #[arg(long)]
+    // pub voice_output: bool,
 
-    /// Voice to use for text-to-speech
-    #[arg(long)]
-    pub voice: Option<String>,
+    // /// Voice to use for text-to-speech
+    // #[arg(long)]
+    // pub voice: Option<String>,
 
     // History management
     /// Search through conversation history
@@ -156,26 +156,26 @@ pub struct Args {
     #[arg(long)]
     pub merge_history: Option<Vec<String>>,
 
-    // Multimodal features
-    /// Capture image from webcam
-    #[arg(long)]
-    pub webcam: bool,
+    // Multimodal features (disabled)
+    // /// Capture image from webcam
+    // #[arg(long)]
+    // pub webcam: bool,
 
-    /// Take screenshot
-    #[arg(long)]
-    pub screenshot: bool,
+    // /// Take screenshot
+    // #[arg(long)]
+    // pub screenshot: bool,
 
-    /// Process PDF file
-    #[arg(long)]
-    pub pdf: Option<String>,
+    // /// Process PDF file
+    // #[arg(long)]
+    // pub pdf: Option<String>,
 
-    /// Process Office document
-    #[arg(long)]
-    pub document: Option<String>,
+    // /// Process Office document
+    // #[arg(long)]
+    // pub document: Option<String>,
 
-    /// Process batch images from directory
-    #[arg(long)]
-    pub batch_images: Option<String>,
+    // /// Process batch images from directory
+    // #[arg(long)]
+    // pub batch_images: Option<String>,
 
     // Workflow features
     /// Execute workflow from file
