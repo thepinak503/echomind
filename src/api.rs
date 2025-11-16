@@ -185,19 +185,19 @@ impl Clone for ApiClient {
 #[serde(untagged)]
 pub enum MessageContent {
     Text(String),
-    MultiModal(Vec<ContentPart>),
+    // MultiModal(Vec<ContentPart>),
 }
 
 impl std::fmt::Display for MessageContent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MessageContent::Text(text) => write!(f, "{}", text),
-            MessageContent::MultiModal(parts) => {
-                for part in parts {
-                    write!(f, "{}", part)?;
-                }
-                Ok(())
-            }
+            // MessageContent::MultiModal(parts) => {
+            //     for part in parts {
+            //         write!(f, "{}", part)?;
+            //     }
+            //     Ok(())
+            // }
         }
     }
 }
@@ -216,43 +216,43 @@ impl Message {
         }
     }
 
-    pub fn multimodal(role: String, parts: Vec<ContentPart>) -> Self {
-        Self {
-            role,
-            content: MessageContent::MultiModal(parts),
-        }
-    }
+    // pub fn multimodal(role: String, parts: Vec<ContentPart>) -> Self {
+    //     Self {
+    //         role,
+    //         content: MessageContent::MultiModal(parts),
+    //     }
+    // }
 
     pub fn get_text(&self) -> Option<&str> {
         match &self.content {
             MessageContent::Text(text) => Some(text),
-            MessageContent::MultiModal(_) => None,
+            // MessageContent::MultiModal(_) => None,
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(tag = "type")]
-pub enum ContentPart {
-    #[serde(rename = "text")]
-    Text { text: String },
-    #[serde(rename = "image_url")]
-    ImageUrl { image_url: ImageUrl },
-}
+// #[derive(Serialize, Deserialize, Clone, Debug)]
+// #[serde(tag = "type")]
+// pub enum ContentPart {
+//     #[serde(rename = "text")]
+//     Text { text: String },
+//     #[serde(rename = "image_url")]
+//     ImageUrl { image_url: ImageUrl },
+// }
 
-impl std::fmt::Display for ContentPart {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ContentPart::Text { text } => write!(f, "{}", text),
-            ContentPart::ImageUrl { image_url } => write!(f, "[Image: {}]", image_url.url),
-        }
-    }
-}
+// impl std::fmt::Display for ContentPart {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         match self {
+//             ContentPart::Text { text } => write!(f, "{}", text),
+//             ContentPart::ImageUrl { image_url } => write!(f, "[Image: {}]", image_url.url),
+//         }
+//     }
+// }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ImageUrl {
-    pub url: String,
-}
+// #[derive(Serialize, Deserialize, Clone, Debug)]
+// pub struct ImageUrl {
+//     pub url: String,
+// }
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ChatRequest {

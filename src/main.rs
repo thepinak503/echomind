@@ -4,7 +4,7 @@ mod config;
 mod error;
 mod repl;
 
-use api::{ApiClient, ChatRequest, Message, Provider, ContentPart, ImageUrl};
+use api::{ApiClient, ChatRequest, Message, Provider/*, ContentPart, ImageUrl*/};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
 use clap::Parser;
@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::IsTerminal;
 use tokio::io::{self, AsyncReadExt};
-use base64::{Engine as _, engine::general_purpose};
+// use base64::{Engine as _, engine::general_purpose};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct HistoryEntry {
@@ -274,21 +274,21 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
         input.trim().to_string()
     };
 
-    let user_message = if let Some(image_path) = &args.image {
-        // Load image and create multimodal message
-        let image_data = load_image_as_base64(image_path)?;
-        let parts = vec![
-            ContentPart::Text { text: user_content },
-            ContentPart::ImageUrl {
-                image_url: ImageUrl {
-                    url: format!("data:image/jpeg;base64,{}", image_data),
-                },
-            },
-        ];
-        Message::multimodal("user".to_string(), parts)
-    } else {
-        Message::text("user".to_string(), user_content)
-    };
+    // let user_message = if let Some(image_path) = &args.image {
+    //     // Load image and create multimodal message
+    //     let image_data = load_image_as_base64(image_path)?;
+    //     let parts = vec![
+    //         ContentPart::Text { text: user_content },
+    //         ContentPart::ImageUrl {
+    //             image_url: ImageUrl {
+    //                 url: format!("data:image/jpeg;base64,{}", image_data),
+    //             },
+    //         },
+    //     ];
+    //     Message::multimodal("user".to_string(), parts)
+    // } else {
+        let user_message = Message::text("user".to_string(), user_content);
+    // };
     messages.push(user_message.clone());
 
     // Build request
@@ -532,7 +532,8 @@ fn save_history(
             content: msg.get_text().unwrap_or("").to_string(),
             provider: Some(provider.to_string()),
             model: Some(model.to_string()),
-            has_image: matches!(msg.content, api::MessageContent::MultiModal(_)),
+            // has_image: matches!(msg.content, api::MessageContent::MultiModal(_)),
+            has_image: false,
         })
         .collect();
 
@@ -545,11 +546,11 @@ fn save_history(
     Ok(())
 }
 
-// Load image file and encode as base64
-fn load_image_as_base64(path: &str) -> Result<String> {
-    let data = fs::read(path).map_err(|e| EchomindError::FileError(format!("Failed to read image: {}", e)))?;
-    Ok(general_purpose::STANDARD.encode(&data))
-}
+// // Load image file and encode as base64
+// fn load_image_as_base64(path: &str) -> Result<String> {
+//     let data = fs::read(path).map_err(|e| EchomindError::FileError(format!("Failed to read image: {}", e)))?;
+//     Ok(general_purpose::STANDARD.encode(&data))
+// }
 
 // Format output based on format specification
 fn format_output(content: &str, format_str: &str, provider: &str, model: &str) -> Result<String> {
