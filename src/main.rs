@@ -431,6 +431,13 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
         }
     }
 
+    // Display metrics
+    println!("\n{} {} | {} {} | {} {:.2}s",
+        "Provider:".cyan(), provider_str,
+        "Model:".cyan(), model,
+        "Time:".cyan(), elapsed.as_secs_f64()
+    );
+
     // Save to history if specified
     if let Some(history_file) = &args.history {
         let mut history_messages = vec![user_message];
