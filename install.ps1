@@ -25,33 +25,7 @@ Write-Output ""
 $Arch = [System.Environment]::Is64BitOperatingSystem ? "x64" : "x86"
 Write-Info "Detected Architecture: $Arch"
 
-# Check if Rust is installed
-$RustInstalled = Get-Command cargo -ErrorAction SilentlyContinue
-
-if (-not $RustInstalled) {
-    Write-Warning "Rust is not installed."
-    Write-Info "Installing Rust..."
-
-    # Download and install rustup
-    $RustupUrl = "https://win.rustup.rs/x86_64"
-    $RustupInstaller = "$env:TEMP\rustup-init.exe"
-
-    Write-Info "Downloading Rust installer..."
-    Invoke-WebRequest -Uri $RustupUrl -OutFile $RustupInstaller
-
-    Write-Info "Running Rust installer (this may take a few minutes)..."
-    Start-Process -FilePath $RustupInstaller -ArgumentList "-y" -Wait -NoNewWindow
-
-    Remove-Item $RustupInstaller
-
-    # Update PATH for current session
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-
-    Write-Success "✓ Rust installed"
-}
-else {
-    Write-Success "✓ Rust is already installed"
-}
+# Note: Using pre-built binary, no need for Rust
 
 # Create temporary directory
 $TempDir = Join-Path $env:TEMP "echomind_install_$(Get-Random)"
@@ -80,16 +54,7 @@ try {
 
     Set-Location $TempDir
 
-    # Build echomind
-    Write-Info "Building echomind (this may take several minutes)..."
-    cargo build --release
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Build failed!"
-        exit 1
-    }
-
-    Write-Success "✓ Build completed"
+    Write-Info "Using pre-built binary..."
 
     # Determine installation directory
     $InstallDir = "$env:USERPROFILE\.local\bin"
@@ -102,7 +67,7 @@ try {
 
     # Copy binary
     Write-Info "Installing echomind..."
-    Copy-Item -Path "target\release\echomind.exe" -Destination "$InstallDir\echomind.exe" -Force
+    Copy-Item -Path "echomind-windows-x86_64.exe" -Destination "$InstallDir\echomind.exe" -Force
 
     # Create documentation directory
     $DocDir = "$env:USERPROFILE\.local\share\doc\echomind"
