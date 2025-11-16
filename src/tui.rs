@@ -13,7 +13,7 @@ use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{
-        Block, Borders, Gauge, List, ListItem, Paragraph, Wrap,
+        Block, Borders, List, ListItem, Paragraph, Wrap,
     },
     Frame, Terminal,
 };
@@ -33,6 +33,7 @@ struct App {
     state: AppState,
     input: String,
     response: String,
+    chat: Vec<String>,
     provider: Provider,
     model: String,
     temperature: f32,
@@ -60,6 +61,7 @@ impl App {
             state: AppState::Input,
             input: String::new(),
             response: String::new(),
+            chat: Vec::new(),
             provider,
             model,
             temperature,
@@ -176,15 +178,16 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
                         }
                     } else {
                         match key.code {
-                            KeyCode::Enter => {
-                                if let AppState::Input = app.state {
-                                    if !app.input.is_empty() {
-                                        app.history.push(app.input.clone());
-                                        app.history_index = None;
-                                        app.next();
-                                    }
-                                }
+                    KeyCode::Enter => {
+                        if let AppState::Input = app.state {
+                            if !app.input.is_empty() {
+                                app.history.push(app.input.clone());
+                                app.chat.push(format!("You: {}", app.input));
+                                app.history_index = None;
+                                app.next();
                             }
+                        }
+                    }
                             KeyCode::Char(c) => {
                                 if let AppState::Input = app.state {
                                     app.input.push(c);
@@ -234,7 +237,8 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
 
         // Check for response
         if let Ok(response) = rx.try_recv() {
-            app.response = response;
+            app.response = response.clone();
+            app.chat.push(format!("{}: {}", app.provider.name(), response));
             app.state = AppState::Response;
             app.input.clear();
         }
@@ -349,14 +353,16 @@ fn ui(f: &mut Frame, app: &mut App) {
             f.render_widget(para, inner_area);
         }
         AppState::Processing => {
-            let gauge = Gauge::default()
-                .block(Block::default().borders(Borders::ALL).title(" Processing").border_style(Style::default().fg(Color::Yellow)))
-                .gauge_style(Style::default().fg(Color::Yellow))
-                .percent(50);
-            f.render_widget(gauge, inner_area);
+            let text = format!("{} is thinking...", app.provider.name());
+            let para = Paragraph::new(text)
+                .alignment(Alignment::Center)
+                .style(Style::default().fg(Color::Yellow))
+                .wrap(Wrap { trim: true });
+            f.render_widget(para, inner_area);
         }
         AppState::Response => {
-            let para = Paragraph::new(app.response.as_str())
+            let chat_text = app.chat.join("\n");
+            let para = Paragraph::new(chat_text)
                 .style(Style::default().fg(Color::White))
                 .wrap(Wrap { trim: true });
             f.render_widget(para, inner_area);
