@@ -47,7 +47,7 @@
 - [x] Enhanced install.ps1 with build fallback and System32 copy
 - [x] Comprehensive instructions.md for AI agents
 - [x] Platform-specific compilation details
-- [x] TUI mode with ratatui (--tui flag), copying core CLI features
+- [x] TUI mode with ratatui (--tui flag), copying core CLI features (code implemented, build fails due to system memory)
 
 ## Pending Features (Future)
 - [ ] Plugin system
