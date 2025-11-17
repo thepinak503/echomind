@@ -17,8 +17,8 @@ sha256sums=('89420118f36eb6894464878114f972d035588205863d840b13caf59ad4788ca6')
 build() {
   cd "$srcdir/$pkgname-$pkgver"
   export RUSTFLAGS="--remap-path-prefix=$(pwd)=."
-  cargo clean
-  cargo build --release
+  cargo fetch --locked
+  cargo build --release --frozen
 }
 
 package() {
@@ -29,5 +29,6 @@ package() {
   install -Dm644 config.example.toml "$pkgdir/usr/share/doc/$pkgname/config.example.toml"
   install -Dm644 CHANGELOG.md "$pkgdir/usr/share/doc/$pkgname/CHANGELOG.md"
   install -Dm644 echomind.1 "$pkgdir/usr/share/man/man1/echomind.1"
+  gzip "$pkgdir/usr/share/man/man1/echomind.1"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
