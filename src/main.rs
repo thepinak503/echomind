@@ -5,7 +5,7 @@ mod error;
 mod repl;
 mod tui;
 
-// use crate::tui::run_tui;
+// // use crate::tui::run_tui;
 use api::{ApiClient, ChatRequest, Message, Provider/*, ContentPart, ImageUrl*/};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
@@ -94,9 +94,26 @@ async fn run() -> Result<()> {
     }
 
     // Check if we're in TUI mode
-    // if args.tui {
-    //     return run_tui(args, config).await;
-    // }
+    if args.tui {
+        use ratatui::{backend::CrosstermBackend, Terminal};
+        use crossterm::{execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode}, event::{DisableMouseCapture, EnableMouseCapture}};
+        use crate::tui::App;
+
+        enable_raw_mode()?;
+        let mut stdout = std::io::stdout();
+        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+        let backend = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend)?;
+        let app = App::new(config, args.clone());
+        let res = crate::tui::run_app(&mut terminal, app).await;
+        disable_raw_mode()?;
+        execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+        terminal.show_cursor()?;
+        if let Err(err) = res {
+            eprintln!("TUI error: {:?}", err);
+        }
+        return Ok(());
+    }
 
     // Check if we're in interactive mode
     if args.interactive {

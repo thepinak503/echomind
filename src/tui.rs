@@ -32,7 +32,7 @@ enum AppState {
 }
 
 #[derive(Debug)]
-struct App {
+pub struct App {
     state: AppState,
     input: String,
     response: String,
@@ -51,7 +51,7 @@ struct App {
 }
 
 impl App {
-    fn new(config: Config, args: Args) -> Self {
+    pub fn new(config: Config, args: Args) -> Self {
         let provider = Provider::from_string(args.provider.as_ref().unwrap_or(&config.api.provider)).unwrap_or(Provider::Chat);
         let model = args.model.as_ref().unwrap_or(&config.api.model).clone();
         let temperature = args.temperature.unwrap_or(config.defaults.temperature);
@@ -128,7 +128,7 @@ fn decrypt(data: &[u8]) -> Result<Vec<u8>> {
     Ok(decrypted.to_vec())
 }
 
-async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+pub async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     let (tx, mut rx) = mpsc::unbounded_channel();
 
     loop {
@@ -309,11 +309,23 @@ async fn process_query(
 fn ui(f: &mut Frame, app: &mut App) {
     let size = f.size();
 
+    // Top layout: status and main
+    let top_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Min(1)])
+        .split(size);
+
+    // Status bar
+    let status_text = format!("Provider: {:?} | Model: {} | Temp: {:.1} | Max Tokens: {} | Stream: {}",
+        app.provider, app.model, app.temperature, app.max_tokens.unwrap_or(0), if app.stream { "On" } else { "Off" });
+    let status = Paragraph::new(status_text).style(Style::default().bg(Color::Blue).fg(Color::White));
+    f.render_widget(status, top_chunks[0]);
+
     // Main layout: sidebar and main area
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(25), Constraint::Percentage(75)])
-        .split(size);
+        .split(top_chunks[1]);
 
     // Sidebar: History
     let history_items: Vec<ListItem> = app
