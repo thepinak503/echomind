@@ -60,4 +60,10 @@ impl From<serde_json::Error> for EchomindError {
     }
 }
 
+impl From<std::string::FromUtf8Error> for EchomindError {
+    fn from(err: std::string::FromUtf8Error) -> Self {
+        EchomindError::ParseError(err.to_string())
+    }
+}
+
 pub type Result<T> = std::result::Result<T, EchomindError>;

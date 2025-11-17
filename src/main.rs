@@ -5,7 +5,7 @@ mod error;
 mod repl;
 mod tui;
 
-use crate::tui::run_tui;
+// use crate::tui::run_tui;
 use api::{ApiClient, ChatRequest, Message, Provider/*, ContentPart, ImageUrl*/};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
@@ -94,9 +94,9 @@ async fn run() -> Result<()> {
     }
 
     // Check if we're in TUI mode
-    if args.tui {
-        return run_tui(args, config).await;
-    }
+    // if args.tui {
+    //     return run_tui(args, config).await;
+    // }
 
     // Check if we're in interactive mode
     if args.interactive {

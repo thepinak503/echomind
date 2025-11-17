@@ -79,6 +79,10 @@ impl App {
             args,
         }
 
+    }
+
+}
+
 fn save_chat_history(app: &App) -> Result<()> {
     let json = serde_json::to_string(&app.chat)?;
     let encrypted = encrypt(json.as_bytes())?;
@@ -100,7 +104,6 @@ fn load_chat_history(config: &Config) -> Result<Vec<String>> {
     let json = String::from_utf8(decrypted)?;
     let chat: Vec<String> = serde_json::from_str(&json)?;
     Ok(chat)
-}
 }
 
 fn encrypt(data: &[u8]) -> Result<Vec<u8>> {
@@ -152,7 +155,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
                 }
             });
 
-            app.next();
+            // app.next();
         }
 
         if let Ok(event) = event::read() {
@@ -197,7 +200,7 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Re
                                 app.chat.push(format!("You: {}", app.input));
                                 save_chat_history(&app).ok();
                                 app.history_index = None;
-                                app.next();
+                                // app.next();
                             }
                         }
                     }
@@ -303,7 +306,7 @@ async fn process_query(
     Ok(())
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+fn ui(f: &mut Frame, app: &mut App) {
     let size = f.size();
 
     // Main layout: sidebar and main area
@@ -355,7 +358,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let main_block = Block::default().borders(Borders::ALL).title(" Response").border_style(Style::default().fg(Color::Green));
     f.render_widget(main_block, right_chunks[1]);
 
-    let inner_area = right_chunks[1].inner(Margin::new(1, 1));
+    let inner_area = right_chunks[1].inner(&Margin::new(1, 1));
 
     match app.state {
         AppState::Input => {
@@ -387,7 +390,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let input_block = Block::default().borders(Borders::ALL).title(" Input").border_style(Style::default().fg(Color::Blue));
     f.render_widget(input_block, right_chunks[2]);
 
-    let input_area = right_chunks[2].inner(Margin::new(1, 1));
+    let input_area = right_chunks[2].inner(&Margin::new(1, 1));
     let input_para = Paragraph::new(app.input.as_str()).style(Style::default().fg(Color::White));
     f.render_widget(input_para, input_area);
 
