@@ -74,6 +74,7 @@ impl Provider {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(non_snake_case)]
 pub struct GeminiModel {
     #[allow(dead_code)]
     pub name: String,
@@ -482,7 +483,7 @@ impl ApiClient {
             }
         }
 
-        return Ok(result);
+        Ok(result)
             },
             Provider::Gemini => {
                 let base_endpoint = self.provider.endpoint();
@@ -538,7 +539,7 @@ impl ApiClient {
                     }
                 }
 
-                return Ok(result);
+                Ok(result)
             },
             _ => {
                 let endpoint = self.provider.endpoint();
@@ -595,7 +596,7 @@ impl ApiClient {
                 }
             }
 
-            return Ok(result);
+            Ok(result)
             },
         }
     }
@@ -664,8 +665,7 @@ impl ApiClient {
                 let remaining = buffer[newline_pos + 1..].to_string();
                 buffer = remaining;
 
-                if line.starts_with("data: ") {
-                    let data = &line[6..];
+                if let Some(data) = line.strip_prefix("data: ") {
                     if data == "[DONE]" {
                         break;
                     }
@@ -685,8 +685,7 @@ impl ApiClient {
         // Process any remaining content in buffer
         for line in buffer.lines() {
             let line = line.trim_end();
-            if line.starts_with("data: ") {
-                let data = &line[6..];
+            if let Some(data) = line.strip_prefix("data: ") {
                 if data != "[DONE]" {
                     if let Ok(chunk_data) = serde_json::from_str::<StreamChunk>(data) {
                         if let Some(choice) = chunk_data.choices.first() {

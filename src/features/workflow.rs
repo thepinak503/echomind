@@ -179,7 +179,7 @@ impl WorkflowManager {
         
         match &step.step_type {
             StepType::AIRequest => {
-                let prompt = self.replace_variables(&step.prompt.as_ref().unwrap_or(&String::new()), &context.variables);
+                let prompt = self.replace_variables(step.prompt.as_ref().unwrap_or(&String::new()), &context.variables);
                 
                 let messages = vec![Message::text("user".to_string(), prompt)];
                 let request = ChatRequest {

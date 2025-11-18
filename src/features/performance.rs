@@ -411,7 +411,7 @@ impl PerformanceMonitor {
         
         for result in &self.benchmark_results {
             let score = self.calculate_combined_score(result);
-            model_scores.entry(result.model.clone()).or_insert_with(Vec::new).push(score);
+            model_scores.entry(result.model.clone()).or_default().push(score);
         }
         
         let mut avg_scores: Vec<(String, f64)> = model_scores
