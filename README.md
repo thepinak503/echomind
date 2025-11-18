@@ -2,6 +2,8 @@
 
 A powerful, lightweight CLI tool in Rust for AI chat APIs. Pipe input, get responses, with streaming, interactive mode, and more.
 
+**Version:** 0.3.2
+
 ## ✨ Features
 - **Multiple Providers**: OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, ChatAnywhere, ch.at
 - **Streaming & Interactive**: Real-time responses, REPL mode
@@ -10,15 +12,6 @@ A powerful, lightweight CLI tool in Rust for AI chat APIs. Pipe input, get respo
 - **Utilities**: Clipboard, file I/O, history, multi-model comparison
 - **Cross-Platform**: Linux, macOS, Windows
 - **Response Metrics**: Displays provider, model, parameters, and time in ASCII table
-
-## 📦 Installation
-
-### Quick Install
-- **Linux/macOS**: `bash <(curl -fsSL https://is.gd/echomindlin)`
-- **Windows**: `irm https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex`
-- **Cargo**: `cargo install --git https://github.com/thepinak503/echomind.git`
-
-Supports Linux, macOS, Windows. See [INSTALL.md](INSTALL.md) for details.
 
 ## 📦 Installation
 
@@ -139,7 +132,6 @@ echo "Be creative" | echomind --temperature 1.5 --max-tokens 500 --top-p 0.9
 ```
 
 See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md) for all options.
-```
 
 ## 📚 Links
 - [Installation Guide](INSTALL.md)
