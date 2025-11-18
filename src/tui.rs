@@ -1,14 +1,14 @@
-use crate::api::{ApiClient, ChatRequest, Message, Provider};
+use crate::api::{Provider};
 use crate::cli::Args;
 use crate::config::Config;
 use crate::error::Result;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    event::{self, Event, KeyCode, KeyModifiers},
+    // execute,
+    // terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
+    backend::{Backend},
     layout::{Alignment, Constraint, Direction, Layout, Margin},
     style::{Color, Modifier, Style},
     text::{Line, Span},
@@ -22,12 +22,12 @@ use serde_json;
 use std::fs;
 use std::io;
 use tokio::sync::mpsc;
-use tokio::task;
+// use tokio::task;
 
 #[derive(Debug, Clone)]
 enum AppState {
     Input,
-    Processing,
+    // Processing,
     Response,
 }
 
@@ -41,13 +41,13 @@ pub struct App {
     model: String,
     temperature: f32,
     max_tokens: Option<u32>,
-    top_p: Option<f32>,
-    top_k: Option<u32>,
+    // top_p: Option<f32>,
+    // top_k: Option<u32>,
     stream: bool,
     history: Vec<String>,
     history_index: Option<usize>,
-    config: Config,
-    args: Args,
+    // config: Config,
+    // args: Args,
 }
 
 impl App {
@@ -56,8 +56,8 @@ impl App {
         let model = args.model.as_ref().unwrap_or(&config.api.model).clone();
         let temperature = args.temperature.unwrap_or(config.defaults.temperature);
         let max_tokens = args.max_tokens.or(config.defaults.max_tokens);
-        let top_p = args.top_p.or(config.defaults.top_p);
-        let top_k = args.top_k.or(config.defaults.top_k);
+        // let top_p = args.top_p.or(config.defaults.top_p);
+        // let top_k = args.top_k.or(config.defaults.top_k);
         let stream = args.stream;
         let chat = load_chat_history(&config).unwrap_or_default();
 
@@ -70,13 +70,13 @@ impl App {
             model,
             temperature,
             max_tokens,
-            top_p,
-            top_k,
+            // top_p,
+            // top_k,
             stream,
             history: Vec::new(),
             history_index: None,
-            config,
-            args,
+            // config,
+            // args,
         }
 
     }
@@ -93,7 +93,7 @@ fn save_chat_history(app: &App) -> Result<()> {
     Ok(())
 }
 
-fn load_chat_history(config: &Config) -> Result<Vec<String>> {
+fn load_chat_history(_config: &Config) -> Result<Vec<String>> {
     let config_dir = dirs::config_dir().ok_or(crate::error::EchomindError::ConfigError("No config dir".to_string()))?.join("echomind");
     let path = config_dir.join("chat_history.enc");
     if !path.exists() {
@@ -129,34 +129,34 @@ fn decrypt(data: &[u8]) -> Result<Vec<u8>> {
 }
 
 pub async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
-    let (tx, mut rx) = mpsc::unbounded_channel();
+    let (_tx, mut rx) = mpsc::unbounded_channel::<String>();
 
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
-        if let AppState::Processing = app.state {
-            // Start processing in background
-            let input = app.input.clone();
-            let provider = app.provider.clone();
-            let model = app.model.clone();
-            let temperature = app.temperature;
-            let max_tokens = app.max_tokens;
-            let top_p = app.top_p;
-            let top_k = app.top_k;
-            let stream = app.stream;
-            let config = app.config.clone();
-            let args = app.args.clone();
-            let tx_process = tx.clone();
-            let tx_error = tx.clone();
+        // if let AppState::Processing = app.state {
+        //     // Start processing in background
+        //     let input = app.input.clone();
+        //     let provider = app.provider.clone();
+        //     let model = app.model.clone();
+        //     let temperature = app.temperature;
+        //     let max_tokens = app.max_tokens;
+        //     let top_p = app.top_p;
+        //     let top_k = app.top_k;
+        //     let stream = app.stream;
+        //     let config = app.config.clone();
+        //     let args = app.args.clone();
+        //     let tx_process = tx.clone();
+        //     let tx_error = tx.clone();
 
-            task::spawn(async move {
-                if let Err(e) = process_query(input, provider, model, temperature, max_tokens, top_p, top_k, stream, config, args, tx_process).await {
-                    let _ = tx_error.send(format!("Error: {:?}", e));
-                }
-            });
+        //     task::spawn(async move {
+        //         if let Err(e) = process_query(input, provider, model, temperature, max_tokens, top_p, top_k, stream, config, args, tx_process).await {
+        //             let _ = tx_error.send(format!("Error: {:?}", e));
+        //         }
+        //     });
 
-            // app.next();
-        }
+        //     // app.next();
+        // }
 
         if let Ok(event) = event::read() {
             match event {
@@ -262,49 +262,49 @@ pub async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io
     }
 }
 
-async fn process_query(
-    input: String,
-    provider: Provider,
-    model: String,
-    temperature: f32,
-    max_tokens: Option<u32>,
-    top_p: Option<f32>,
-    top_k: Option<u32>,
-    stream: bool,
-    config: Config,
-    args: Args,
-    tx: mpsc::UnboundedSender<String>,
-) -> Result<()> {
-    let api_key = args.api_key.or(config.api.api_key.clone());
-    let timeout = args.timeout.unwrap_or(config.api.timeout);
+// async fn process_query(
+//     input: String,
+//     provider: Provider,
+//     model: String,
+//     temperature: f32,
+//     max_tokens: Option<u32>,
+//     top_p: Option<f32>,
+//     top_k: Option<u32>,
+//     stream: bool,
+//     config: Config,
+//     args: Args,
+//     tx: mpsc::UnboundedSender<String>,
+// ) -> Result<()> {
+//     let api_key = args.api_key.or(config.api.api_key.clone());
+//     let timeout = args.timeout.unwrap_or(config.api.timeout);
 
-    let client = ApiClient::new(provider, api_key, timeout)?;
+//     let client = ApiClient::new(provider, api_key, timeout)?;
 
-    let messages = vec![Message::text("user".to_string(), input)];
+//     let messages = vec![Message::text("user".to_string(), input)];
 
-    let request = ChatRequest {
-        messages,
-        model: Some(model),
-        temperature: Some(temperature),
-        max_tokens,
-        top_p,
-        top_k,
-        stream: Some(stream),
-    };
+//     let request = ChatRequest {
+//         messages,
+//         model: Some(model),
+//         temperature: Some(temperature),
+//         max_tokens,
+//         top_p,
+//         top_k,
+//         stream: Some(stream),
+//     };
 
-    let content = if stream {
-        let mut full_response = String::new();
-        client.send_message_stream(request, |chunk| {
-            full_response.push_str(&chunk);
-            let _ = tx.send(full_response.clone());
-        }).await?
-    } else {
-        client.send_message(request).await?
-    };
+//     let content = if stream {
+//         let mut full_response = String::new();
+//         client.send_message_stream(request, |chunk| {
+//             full_response.push_str(&chunk);
+//             let _ = tx.send(full_response.clone());
+//         }).await?
+//     } else {
+//         client.send_message(request).await?
+//     };
 
-    let _ = tx.send(content);
-    Ok(())
-}
+//     let _ = tx.send(content);
+//     Ok(())
+// }
 
 fn ui(f: &mut Frame, app: &mut App) {
     let size = f.size();
@@ -381,14 +381,14 @@ fn ui(f: &mut Frame, app: &mut App) {
                 .wrap(Wrap { trim: true });
             f.render_widget(para, inner_area);
         }
-        AppState::Processing => {
-            let text = format!("{} is thinking...", app.provider.name());
-            let para = Paragraph::new(text)
-                .alignment(Alignment::Center)
-                .style(Style::default().fg(Color::Yellow))
-                .wrap(Wrap { trim: true });
-            f.render_widget(para, inner_area);
-        }
+        // AppState::Processing => {
+            // let text = format!("{} is thinking...", app.provider.name());
+            // let para = Paragraph::new(text)
+            //     .alignment(Alignment::Center)
+            //     .style(Style::default().fg(Color::Yellow))
+            //     .wrap(Wrap { trim: true });
+            // f.render_widget(para, inner_area);
+        // }
         AppState::Response => {
             let chat_text = app.chat.join("\n");
             let para = Paragraph::new(chat_text)
