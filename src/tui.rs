@@ -17,7 +17,7 @@ use ratatui::{
     },
     Frame, Terminal,
 };
-// use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
 use serde_json;
 use std::fs;
 use std::io;
@@ -84,45 +84,48 @@ impl App {
 
 fn save_chat_history(app: &App) -> Result<()> {
     let json = serde_json::to_string(&app.messages)?;
+    let encrypted = encrypt(json.as_bytes())?;
     let config_dir = dirs::config_dir().ok_or(crate::error::EchomindError::ConfigError("No config dir".to_string()))?.join("echomind");
     fs::create_dir_all(&config_dir)?;
-    let path = config_dir.join("chat_history.json");
-    fs::write(path, json)?;
+    let path = config_dir.join("chat_history.enc");
+    fs::write(path, encrypted)?;
     Ok(())
 }
 
 fn load_chat_history(_config: &Config) -> Result<Vec<Message>> {
     let config_dir = dirs::config_dir().ok_or(crate::error::EchomindError::ConfigError("No config dir".to_string()))?.join("echomind");
-    let path = config_dir.join("chat_history.json");
+    let path = config_dir.join("chat_history.enc");
     if !path.exists() {
         return Ok(Vec::new());
     }
-    let json = fs::read_to_string(path)?;
+    let encrypted = fs::read(path)?;
+    let decrypted = decrypt(&encrypted)?;
+    let json = String::from_utf8(decrypted)?;
     let messages: Vec<Message> = serde_json::from_str(&json)?;
     Ok(messages)
 }
 
-// fn encrypt(data: &[u8]) -> Result<Vec<u8>> {
-//     let key_bytes = b"01234567890123456789012345678901"; // 32 bytes for AES-256
-//     let key = UnboundKey::new(&AES_256_GCM, key_bytes).map_err(|_| crate::error::EchomindError::ConfigError("Invalid key".to_string()))?;
-//     let key = LessSafeKey::new(key);
-//     let mut in_out = data.to_vec();
-//     let nonce_bytes = [0u8; 12];
-//     let nonce = Nonce::assume_unique_for_key(nonce_bytes);
-//     key.seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out).map_err(|_| crate::error::EchomindError::ConfigError("Encryption failed".to_string()))?;
-//     Ok(in_out)
-// }
+fn encrypt(data: &[u8]) -> Result<Vec<u8>> {
+    let key_bytes = b"01234567890123456789012345678901"; // 32 bytes for AES-256
+    let key = UnboundKey::new(&AES_256_GCM, key_bytes).map_err(|_| crate::error::EchomindError::ConfigError("Invalid key".to_string()))?;
+    let key = LessSafeKey::new(key);
+    let mut in_out = data.to_vec();
+    let nonce_bytes = [0u8; 12];
+    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+    key.seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out).map_err(|_| crate::error::EchomindError::ConfigError("Encryption failed".to_string()))?;
+    Ok(in_out)
+}
 
-// fn decrypt(data: &[u8]) -> Result<Vec<u8>> {
-//     let key_bytes = b"01234567890123456789012345678901";
-//     let key = UnboundKey::new(&AES_256_GCM, key_bytes).map_err(|_| crate::error::EchomindError::ConfigError("Invalid key".to_string()))?;
-//     let key = LessSafeKey::new(key);
-//     let mut in_out = data.to_vec();
-//     let nonce_bytes = [0u8; 12];
-//     let nonce = Nonce::assume_unique_for_key(nonce_bytes);
-//     let decrypted = key.open_in_place(nonce, Aad::empty(), &mut in_out).map_err(|_| crate::error::EchomindError::ConfigError("Decryption failed".to_string()))?;
-//     Ok(decrypted.to_vec())
-// }
+fn decrypt(data: &[u8]) -> Result<Vec<u8>> {
+    let key_bytes = b"01234567890123456789012345678901";
+    let key = UnboundKey::new(&AES_256_GCM, key_bytes).map_err(|_| crate::error::EchomindError::ConfigError("Invalid key".to_string()))?;
+    let key = LessSafeKey::new(key);
+    let mut in_out = data.to_vec();
+    let nonce_bytes = [0u8; 12];
+    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+    let decrypted = key.open_in_place(nonce, Aad::empty(), &mut in_out).map_err(|_| crate::error::EchomindError::ConfigError("Decryption failed".to_string()))?;
+    Ok(decrypted.to_vec())
+}
 
 pub async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     let (tx, mut rx) = mpsc::unbounded_channel::<String>();

@@ -1,7 +1,7 @@
 use crate::error::{EchomindError, Result};
 use base64::Engine;
-// use ring::aead::{AES_256_GCM, LessSafeKey, Nonce, UnboundKey, Aad};
-// use ring::rand::{SecureRandom, SystemRandom};
+use ring::aead::{AES_256_GCM, LessSafeKey, Nonce, UnboundKey, Aad};
+use ring::rand::{SecureRandom, SystemRandom};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -35,7 +35,7 @@ pub enum AuditEventType {
 pub struct SecurityManager {
     encryption_key: Option<[u8; 32]>,
     audit_log_file: Option<String>,
-    // rng: SystemRandom,
+    rng: SystemRandom,
 }
 
 impl SecurityManager {
@@ -43,7 +43,7 @@ impl SecurityManager {
         Self {
             encryption_key: None,
             audit_log_file: None,
-            // rng: SystemRandom::new(),
+            rng: SystemRandom::new(),
         }
     }
 
@@ -52,30 +52,72 @@ impl SecurityManager {
     }
 
     pub fn generate_encryption_key(&mut self) -> Result<[u8; 32]> {
-        // let mut key = [0u8; 32];
-        // self.rng.fill(&mut key)
-        //     .map_err(|e| EchomindError::Other(format!("Failed to generate encryption key: {}", e)))?;
-        // self.encryption_key = Some(key);
-        // Ok(key)
-        Err(EchomindError::Other("Encryption disabled".to_string()))
+        let mut key = [0u8; 32];
+        self.rng.fill(&mut key)
+            .map_err(|e| EchomindError::Other(format!("Failed to generate encryption key: {}", e)))?;
+        self.encryption_key = Some(key);
+        Ok(key)
     }
 
-    pub fn encrypt_data(&self, _data: &str) -> Result<String> {
-        // let key = self.encryption_key
-        //     .ok_or_else(|| EchomindError::Other("No encryption key set".to_string()))?;
+    pub fn encrypt_data(&self, data: &str) -> Result<String> {
+        let key = self.encryption_key
+            .ok_or_else(|| EchomindError::Other("No encryption key set".to_string()))?;
 
-        // let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
-        //     .map_err(|e| EchomindError::Other(format!("Failed to create encryption key: {}", e)))?;
-        // let less_safe_key = LessSafeKey::new(unbound_key);
+        let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
+            .map_err(|e| EchomindError::Other(format!("Failed to create encryption key: {}", e)))?;
+        let less_safe_key = LessSafeKey::new(unbound_key);
 
-        // let mut nonce_bytes = [0u8; 12];
-        Err(EchomindError::Other("Encryption disabled".to_string()))
+        let mut nonce_bytes = [0u8; 12];
+        self.rng.fill(&mut nonce_bytes)
+            .map_err(|e| EchomindError::Other(format!("Failed to generate nonce: {}", e)))?;
+        let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+
+        let mut in_out = data.as_bytes().to_vec();
+
+
+        let tag = less_safe_key.seal_in_place_separate_tag(nonce, Aad::empty(), &mut in_out)
+            .map_err(|e| EchomindError::Other(format!("Encryption failed: {}", e)))?;
+
+        let mut encrypted = nonce_bytes.to_vec();
+        encrypted.extend_from_slice(tag.as_ref());
+        encrypted.extend_from_slice(&in_out);
+
+        Ok(base64::engine::general_purpose::STANDARD.encode(encrypted))
     }
 
-    pub fn decrypt_data(&self, _encrypted_data: &str) -> Result<String> {
-        // let key = self.encryption_key
-        //     .ok_or_else(|| EchomindError::Other("No encryption key set".to_string()))?;
-        Err(EchomindError::Other("Decryption disabled".to_string()))
+    pub fn decrypt_data(&self, encrypted_data: &str) -> Result<String> {
+        let key = self.encryption_key
+            .ok_or_else(|| EchomindError::Other("No encryption key set".to_string()))?;
+
+        let decoded = base64::engine::general_purpose::STANDARD.decode(encrypted_data)
+            .map_err(|e| EchomindError::Other(format!("Failed to decode base64: {}", e)))?;
+
+        if decoded.len() < 28 {
+            return Err(EchomindError::Other("Invalid encrypted data".to_string()));
+        }
+
+        let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
+            .map_err(|e| EchomindError::Other(format!("Failed to create decryption key: {}", e)))?;
+        let less_safe_key = LessSafeKey::new(unbound_key);
+
+        let nonce_bytes = &decoded[..12];
+        let tag = &decoded[12..28];
+        let ciphertext = &decoded[28..];
+
+        let nonce = Nonce::assume_unique_for_key(
+            nonce_bytes.try_into()
+                .map_err(|_| EchomindError::Other("Invalid nonce".to_string()))?
+        );
+
+        let mut in_out = Vec::new();
+        in_out.extend_from_slice(ciphertext);
+        in_out.extend_from_slice(tag);
+
+        let plaintext = less_safe_key.open_in_place(nonce, Aad::empty(), &mut in_out)
+            .map_err(|e| EchomindError::Other(format!("Decryption failed: {}", e)))?;
+
+        String::from_utf8(plaintext.to_vec())
+            .map_err(|e| EchomindError::Other(format!("Failed to convert decrypted data to string: {}", e)))
     }
         
         let nonce_bytes = &decoded[..12];
@@ -136,14 +178,13 @@ impl SecurityManager {
     }
 
     pub fn hash_data(&self, data: &str) -> String {
-        // use ring::digest::{Context, SHA256};
+        use ring::digest::{Context, SHA256};
 
-        // let mut context = Context::new(&SHA256);
-        // context.update(data.as_bytes());
-        // let digest = context.finish();
+        let mut context = Context::new(&SHA256);
+        context.update(data.as_bytes());
+        let digest = context.finish();
 
-        // hex::encode(digest.as_ref())
-        hex::encode(data.as_bytes()) // Simple placeholder
+        hex::encode(digest.as_ref())
     }
 
     pub fn verify_data_integrity(&self, data: &str, expected_hash: &str) -> bool {
@@ -210,30 +251,28 @@ impl SecurityManager {
         Ok(token.len() == 64 && hex::decode(token).is_ok())
     }
 
-    pub fn export_encrypted_history(&self, _history_file: &str, _output_file: &str) -> Result<()> {
-        // let history_content = fs::read_to_string(history_file)
-        //     .map_err(|e| EchomindError::FileError(format!("Failed to read history: {}", e)))?;
+    pub fn export_encrypted_history(&self, history_file: &str, output_file: &str) -> Result<()> {
+        let history_content = fs::read_to_string(history_file)
+            .map_err(|e| EchomindError::FileError(format!("Failed to read history: {}", e)))?;
 
-        // let encrypted = self.encrypt_data(&history_content)?;
+        let encrypted = self.encrypt_data(&history_content)?;
 
-        // fs::write(output_file, encrypted)
-        //     .map_err(|e| EchomindError::FileError(format!("Failed to write encrypted history: {}", e)))?;
+        fs::write(output_file, encrypted)
+            .map_err(|e| EchomindError::FileError(format!("Failed to write encrypted history: {}", e)))?;
 
-        // Ok(())
-        Err(EchomindError::Other("Encrypted export disabled".to_string()))
+        Ok(())
     }
 
-    pub fn import_encrypted_history(&self, _encrypted_file: &str, _output_file: &str) -> Result<()> {
-        // let encrypted_content = fs::read_to_string(encrypted_file)
-        //     .map_err(|e| EchomindError::FileError(format!("Failed to read encrypted file: {}", e)))?;
+    pub fn import_encrypted_history(&self, encrypted_file: &str, output_file: &str) -> Result<()> {
+        let encrypted_content = fs::read_to_string(encrypted_file)
+            .map_err(|e| EchomindError::FileError(format!("Failed to read encrypted file: {}", e)))?;
 
-        // let decrypted = self.decrypt_data(&encrypted_content)?;
+        let decrypted = self.decrypt_data(&encrypted_content)?;
 
-        // fs::write(output_file, decrypted)
-        //     .map_err(|e| EchomindError::FileError(format!("Failed to write decrypted history: {}", e)))?;
+        fs::write(output_file, decrypted)
+            .map_err(|e| EchomindError::FileError(format!("Failed to write decrypted history: {}", e)))?;
 
-        // Ok(())
-        Err(EchomindError::Other("Encrypted import disabled".to_string()))
+        Ok(())
     }
 
     pub fn get_security_report(&self) -> SecurityReport {
