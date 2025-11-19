@@ -119,26 +119,6 @@ impl SecurityManager {
         String::from_utf8(plaintext.to_vec())
             .map_err(|e| EchomindError::Other(format!("Failed to convert decrypted data to string: {}", e)))
     }
-        
-        let nonce_bytes = &decoded[..12];
-        let tag = &decoded[12..28];
-        let ciphertext = &decoded[28..];
-
-        let nonce = Nonce::assume_unique_for_key(
-            nonce_bytes.try_into()
-                .map_err(|_| EchomindError::Other("Invalid nonce".to_string()))?
-        );
-
-        let mut in_out = Vec::new();
-        in_out.extend_from_slice(ciphertext);
-        in_out.extend_from_slice(tag);
-
-        let plaintext = less_safe_key.open_in_place(nonce, Aad::empty(), &mut in_out)
-            .map_err(|e| EchomindError::Other(format!("Decryption failed: {}", e)))?;
-
-        String::from_utf8(plaintext.to_vec())
-            .map_err(|e| EchomindError::Other(format!("Failed to convert decrypted data to string: {}", e)))
-    }
 
     pub fn set_audit_log_file(&mut self, file_path: &str) {
         self.audit_log_file = Some(file_path.to_string());
