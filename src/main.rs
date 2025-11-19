@@ -3,7 +3,7 @@ mod cli;
 mod config;
 mod error;
 mod repl;
-// mod tui;
+mod tui;
 
 // // use crate::tui::run_tui;
 use api::{ApiClient, ChatRequest, Message, Provider/*, ContentPart, ImageUrl*/};
@@ -95,7 +95,23 @@ async fn run() -> Result<()> {
 
     // Check if we're in TUI mode
     if args.tui {
-        eprintln!("TUI mode disabled");
+        use ratatui::{backend::CrosstermBackend, Terminal};
+        use crossterm::{execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode}, event::{DisableMouseCapture, EnableMouseCapture}};
+        use crate::tui::App;
+
+        enable_raw_mode()?;
+        let mut stdout = std::io::stdout();
+        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+        let backend = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend)?;
+        let app = App::new(config, args.clone());
+        let res = crate::tui::run_app(&mut terminal, app).await;
+        disable_raw_mode()?;
+        execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+        terminal.show_cursor()?;
+        if let Err(err) = res {
+            eprintln!("TUI error: {:?}", err);
+        }
         return Ok(());
     }
 
