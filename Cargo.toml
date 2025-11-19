@@ -31,7 +31,7 @@ base64 = "0.22"
 # rodio = "0.19"
 
 # Security & encryption
-ring = "0.16"
+ring = "0.17"
 rand = "0.8"
 
 # Data processing
