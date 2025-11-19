@@ -1,6 +1,6 @@
 use crate::error::{EchomindError, Result};
-use calamine::Reader;
-use csv::{ReaderBuilder, WriterBuilder};
+// use calamine::Reader;
+// use csv::{ReaderBuilder, WriterBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -60,70 +60,8 @@ impl DataProcessor {
         }
     }
 
-    pub fn process_csv(&mut self, file_path: &str) -> Result<DataAnalysis> {
-        if let Some(cached) = self.cache.get(file_path) {
-            return Ok(cached.clone());
-        }
-
-        let file = fs::File::open(file_path)
-            .map_err(|e| EchomindError::FileError(format!("Failed to open CSV file: {}", e)))?;
-        
-        let mut rdr = ReaderBuilder::new().from_reader(file);
-        let headers = rdr.headers()
-            .map_err(|e| EchomindError::Other(format!("Failed to read CSV headers: {}", e)))?;
-        
-        let column_names: Vec<String> = headers.iter().map(|s| s.to_string()).collect();
-        let mut records: Vec<HashMap<String, serde_json::Value>> = Vec::new();
-        let mut column_data: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
-        
-        // Initialize column data
-        for name in &column_names {
-            column_data.insert(name.clone(), Vec::new());
-        }
-        
-        for result in rdr.records() {
-            let record = result
-                .map_err(|e| EchomindError::Other(format!("Failed to read CSV record: {}", e)))?;
-            
-            let mut record_map: HashMap<String, serde_json::Value> = HashMap::new();
-            
-            for (i, field) in record.iter().enumerate() {
-                let column_name = &column_names[i];
-                let value = self.parse_value(field);
-                record_map.insert(column_name.clone(), value.clone());
-                column_data.get_mut(column_name).unwrap().push(value);
-            }
-            
-            records.push(record_map);
-        }
-        
-        let total_rows = records.len();
-        let total_columns = column_names.len();
-        
-        // Calculate column statistics
-        let mut summary_stats = HashMap::new();
-        let mut column_types = HashMap::new();
-        
-        for (column_name, values) in &column_data {
-            let stats = self.calculate_column_stats(values);
-            let data_type = self.infer_column_type(values);
-            
-            summary_stats.insert(column_name.clone(), stats);
-            column_types.insert(column_name.clone(), data_type);
-        }
-        
-        let analysis = DataAnalysis {
-            file_type: "CSV".to_string(),
-            total_rows,
-            total_columns,
-            column_names: column_names.clone(),
-            column_types,
-            summary_stats,
-            sample_data: records.into_iter().take(10).collect(),
-        };
-        
-        self.cache.insert(file_path.to_string(), analysis.clone());
-        Ok(analysis)
+    pub fn process_csv(&mut self, _file_path: &str) -> Result<DataAnalysis> {
+        Err(EchomindError::Other("CSV processing disabled".to_string()))
     }
 
     pub fn process_json(&mut self, file_path: &str) -> Result<DataAnalysis> {
@@ -213,79 +151,8 @@ impl DataProcessor {
         Ok(analysis)
     }
 
-    pub fn process_excel(&mut self, file_path: &str) -> Result<DataAnalysis> {
-        if let Some(cached) = self.cache.get(file_path) {
-            return Ok(cached.clone());
-        }
-
-        let mut excel_data: Vec<Vec<String>> = Vec::new();
-        let mut workbook: calamine::Sheets<std::io::BufReader<std::fs::File>> = calamine::open_workbook(file_path)
-            .map_err(|e| EchomindError::Other(format!("Failed to open Excel file: {}", e)))?;
-        
-        if let Some(Ok(range)) = workbook.worksheet_range_at(0) {
-            for row in range.rows() {
-                let row_data: Vec<String> = row.iter().map(|cell| cell.to_string()).collect();
-                excel_data.push(row_data);
-            }
-        }
-        
-        if excel_data.is_empty() {
-            return Err(EchomindError::Other("Excel file is empty or could not be read".to_string()));
-        }
-        
-        let column_names = excel_data.first().unwrap().clone();
-        let data_rows = &excel_data[1..];
-        
-        let mut records: Vec<HashMap<String, serde_json::Value>> = Vec::new();
-        let mut column_data: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
-        
-        // Initialize column data
-        for name in &column_names {
-            column_data.insert(name.clone(), Vec::new());
-        }
-        
-        for row in data_rows {
-            let mut record_map: HashMap<String, serde_json::Value> = HashMap::new();
-            
-            for (i, cell) in row.iter().enumerate() {
-                if i < column_names.len() {
-                    let column_name = &column_names[i];
-                    let value = self.parse_value(cell);
-                    record_map.insert(column_name.clone(), value.clone());
-                    column_data.get_mut(column_name).unwrap().push(value);
-                }
-            }
-            
-            records.push(record_map);
-        }
-        
-        let total_rows = records.len();
-        let total_columns = column_names.len();
-        
-        // Calculate column statistics
-        let mut summary_stats = HashMap::new();
-        let mut column_types = HashMap::new();
-        
-        for (column_name, values) in &column_data {
-            let stats = self.calculate_column_stats(values);
-            let data_type = self.infer_column_type(values);
-            
-            summary_stats.insert(column_name.clone(), stats);
-            column_types.insert(column_name.clone(), data_type);
-        }
-        
-        let analysis = DataAnalysis {
-            file_type: "Excel".to_string(),
-            total_rows,
-            total_columns,
-            column_names: column_names.clone(),
-            column_types,
-            summary_stats,
-            sample_data: records.into_iter().take(10).collect(),
-        };
-        
-        self.cache.insert(file_path.to_string(), analysis.clone());
-        Ok(analysis)
+    pub fn process_excel(&mut self, _file_path: &str) -> Result<DataAnalysis> {
+        Err(EchomindError::Other("Excel processing disabled".to_string()))
     }
 
     pub fn generate_visualization(&self, analysis: &DataAnalysis, config: &VisualizationConfig) -> Result<String> {
@@ -327,36 +194,7 @@ impl DataProcessor {
     pub fn export_data(&self, data: &[HashMap<String, serde_json::Value>], format: &str, output_path: &str) -> Result<()> {
         match format {
             "csv" => {
-                if data.is_empty() {
-                    return Err(EchomindError::Other("No data to export".to_string()));
-                }
-                
-                let file = fs::File::create(output_path)
-                    .map_err(|e| EchomindError::FileError(format!("Failed to create output file: {}", e)))?;
-                
-                let mut wtr = WriterBuilder::new().from_writer(file);
-                
-                // Write headers
-                let headers: Vec<String> = data[0].keys().cloned().collect();
-                wtr.write_record(&headers)
-                    .map_err(|e| EchomindError::Other(format!("Failed to write CSV headers: {}", e)))?;
-                
-                // Write data
-                for record in data {
-                    let row: Vec<String> = headers.iter()
-                        .map(|header| {
-                            record.get(header)
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("")
-                                .to_string()
-                        })
-                        .collect();
-                    wtr.write_record(&row)
-                        .map_err(|e| EchomindError::Other(format!("Failed to write CSV row: {}", e)))?;
-                }
-                
-                wtr.flush()
-                    .map_err(|e| EchomindError::Other(format!("Failed to flush CSV: {}", e)))?;
+                return Err(EchomindError::Other("CSV export disabled".to_string()));
             }
             "json" => {
                 let json = serde_json::to_string_pretty(data)
@@ -373,6 +211,7 @@ impl DataProcessor {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn parse_value(&self, value: &str) -> serde_json::Value {
         // Try to parse as different types
         if value.trim().is_empty() {
