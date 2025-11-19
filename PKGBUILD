@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://github.com/thepinak503/echomind"
 license=('MIT')
 depends=('openssl' 'gcc-libs')
-makedepends=('rust' 'cargo' 'git')
+makedepends=('rust' 'cargo' 'git' 'clang')
 optdepends=('jq: for JSON output formatting')
 provides=('echomind')
 conflicts=('echomind')
@@ -16,7 +16,7 @@ sha256sums=('SKIP')
 
 build() {
   cd "$srcdir/${pkgname%-git}"
-  export RUSTFLAGS="--remap-path-prefix=$(pwd)=. -C linker=gcc"
+  export RUSTFLAGS="--remap-path-prefix=$(pwd)=. -C linker=clang"
   cargo build --release
 }
 
