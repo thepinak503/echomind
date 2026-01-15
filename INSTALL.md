@@ -32,7 +32,7 @@ makepkg -si
 
 This will:
 - Build the package with cargo
-- Create `echomind-0.3.0-1-x86_64.pkg.tar.zst`
+- Create `echomind-0.3.2-1-x86_64.pkg.tar.zst`
 - Install it via pacman
 - Install to `/usr/bin/echomind`
 
@@ -61,7 +61,7 @@ cd echomind
 dpkg-buildpackage -us -uc -b
 
 # Install the package
-sudo dpkg -i ../echomind_0.3.0-1_amd64.deb
+sudo dpkg -i ../echomind_0.3.2-1_amd64.deb
 
 # Fix any missing dependencies
 sudo apt-get install -f
@@ -76,10 +76,10 @@ Files will be installed to:
 
 ```bash
 # Download from releases
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind_0.3.0-1_amd64.deb
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind_0.3.2-1_amd64.deb
 
 # Install
-sudo dpkg -i echomind_0.3.0-1_amd64.deb
+sudo dpkg -i echomind_0.3.2-1_amd64.deb
 sudo apt-get install -f
 ```
 
@@ -132,12 +132,12 @@ brew install echomind
 ```bash
 # Download for your architecture
 # For Intel Macs:
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-macos-amd64
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind-macos-amd64
 chmod +x echomind-macos-amd64
 sudo mv echomind-macos-amd64 /usr/local/bin/echomind
 
 # For Apple Silicon (M1/M2/M3):
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-macos-arm64
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind-macos-arm64
 chmod +x echomind-macos-arm64
 sudo mv echomind-macos-arm64 /usr/local/bin/echomind
 ```

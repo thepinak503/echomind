@@ -258,7 +258,7 @@ Same as Echomind - See LICENSE file for details
 
 ---
 
-**Version**: 0.3.1+
+**Version**: 0.3.2+
 **Last Updated**: January 2026
 
 For more information, visit the [Echomind GitHub Repository](https://github.com/pinak/echomind)

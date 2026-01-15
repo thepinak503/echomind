@@ -281,6 +281,6 @@ echomind --tui --verbose
 - Visit GitHub issues for bug reports
 
 ## Version Information
-Echomind TUI is part of Echomind v0.3.1+
+Echomind TUI is part of Echomind v0.3.2+
 
 Last Updated: January 2026
