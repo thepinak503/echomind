@@ -15,12 +15,12 @@ source=("https://github.com/thepinak503/echomind/archive/refs/tags/v${pkgver}.ta
 sha256sums=('SKIP')
 
 build() {
-  cd "$srcdir/${pkgname%-git}"
+  cd "$srcdir/$pkgname-$pkgver"
   cargo build --release
 }
 
 package() {
-  cd "$srcdir/${pkgname%-git}"
+  cd "$srcdir/$pkgname-$pkgver"
   install -Dm755 target/release/echomind "$pkgdir/usr/bin/echomind"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 CONTRIBUTING.md "$pkgdir/usr/share/doc/$pkgname/CONTRIBUTING.md"
