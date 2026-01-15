@@ -101,7 +101,7 @@ async fn run() -> Result<()> {
 
     // Check if we're in TUI mode
     if args.tui {
-        use crate::tui::App;
+        use crate::tui::ChatApp;
         use crossterm::{
             event::{DisableMouseCapture, EnableMouseCapture},
             execute,
@@ -137,10 +137,10 @@ async fn run() -> Result<()> {
 
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
-        let app = App::new(config, args.clone());
+        let app = ChatApp::new(config, args.clone());
 
         // Run the TUI app
-        let res = crate::tui::run_app(&mut terminal, app).await;
+        let res = crate::tui::run_tui(&mut terminal, app).await;
 
         // Cleanup - ensure we always restore terminal state
         disable_raw_mode().ok();
