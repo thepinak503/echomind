@@ -1,4 +1,4 @@
-# 🎉 Echomind v0.3.0 - Major Release
+# 🎉 Echomind v0.3.2 - Release
 
 **A powerful, cross-platform AI-powered CLI tool with extensive features for all operating systems!**
 
@@ -312,8 +312,8 @@ echo "deb [trusted=yes] https://packages.echomind.dev/apt/ ./" | sudo tee /etc/a
 sudo apt update && sudo apt install echomind
 
 # Or direct .deb download
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind_0.3.0_amd64.deb
-sudo dpkg -i echomind_0.3.0_amd64.deb
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind_0.3.2_amd64.deb
+sudo dpkg -i echomind_0.3.2_amd64.deb
 ```
 
 **Arch Linux (pacman):**
@@ -324,8 +324,8 @@ yay -S echomind
 
 **Fedora/RHEL/CentOS (dnf/yum):**
 ```bash
-wget https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-0.3.0-1.x86_64.rpm
-sudo dnf install echomind-0.3.0-1.x86_64.rpm
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind-0.3.2-1.x86_64.rpm
+sudo dnf install echomind-0.3.2-1.x86_64.rpm
 ```
 
 **Universal Linux:**
@@ -343,7 +343,7 @@ brew install echomind
 **Manual Installation:**
 ```bash
 # Universal binary (Intel + Apple Silicon)
-curl -L https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-macos-universal -o echomind
+curl -L https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind-macos-universal -o echomind
 chmod +x echomind
 sudo mv echomind /usr/local/bin/
 ```
@@ -363,7 +363,7 @@ choco install echomind
 **PowerShell Manual:**
 ```powershell
 # Download and install
-Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/v0.3.0/echomind-windows-x86_64.exe" -OutFile "echomind.exe"
+Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind-windows-x86_64.exe" -OutFile "echomind.exe"
 # Move to PATH directory
 ```
 
