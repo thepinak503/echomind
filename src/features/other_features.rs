@@ -5,6 +5,12 @@ use serde::{Deserialize, Serialize};
 
 // Advanced Configuration
 pub struct AdvancedConfigManager;
+impl Default for AdvancedConfigManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AdvancedConfigManager {
     pub fn new() -> Self { Self }
     pub fn load_profile(&self, _name: &str) -> Result<()> { Ok(()) }
@@ -14,6 +20,12 @@ impl AdvancedConfigManager {
 
 // Developer Tools
 pub struct DeveloperTools;
+impl Default for DeveloperTools {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DeveloperTools {
     pub fn new() -> Self { Self }
     pub fn enable_debug_mode(&self) -> Result<()> { Ok(()) }
@@ -23,6 +35,12 @@ impl DeveloperTools {
 
 // Integration Features
 pub struct IntegrationManager;
+impl Default for IntegrationManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IntegrationManager {
     pub fn new() -> Self { Self }
     pub fn setup_ide_plugin(&self, _ide: &str) -> Result<()> { Ok(()) }
@@ -33,6 +51,12 @@ impl IntegrationManager {
 
 // Accessibility
 pub struct AccessibilityManager;
+impl Default for AccessibilityManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AccessibilityManager {
     pub fn new() -> Self { Self }
     pub fn enable_high_contrast(&self) -> Result<()> { Ok(()) }
@@ -42,6 +66,12 @@ impl AccessibilityManager {
 
 // Advanced Output
 pub struct AdvancedOutputManager;
+impl Default for AdvancedOutputManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AdvancedOutputManager {
     pub fn new() -> Self { Self }
     pub fn enable_syntax_highlighting(&self, code: &str, _language: &str) -> Result<String> { Ok(code.to_string()) }
@@ -51,6 +81,12 @@ impl AdvancedOutputManager {
 
 // AI-powered Features
 pub struct AIFeaturesManager;
+impl Default for AIFeaturesManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AIFeaturesManager {
     pub fn new() -> Self { Self }
     pub fn suggest_prompts(&self, _context: &str) -> Result<Vec<String>> { Ok(vec![]) }
@@ -60,6 +96,12 @@ impl AIFeaturesManager {
 
 // Scheduling
 pub struct SchedulingManager;
+impl Default for SchedulingManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SchedulingManager {
     pub fn new() -> Self { Self }
     pub fn schedule_task(&self, _task: &str, _schedule: &str) -> Result<()> { Ok(()) }
@@ -69,6 +111,12 @@ impl SchedulingManager {
 
 // Quality Assurance
 pub struct QualityAssuranceManager;
+impl Default for QualityAssuranceManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl QualityAssuranceManager {
     pub fn new() -> Self { Self }
     pub fn score_response(&self, _response: &str) -> Result<f64> { Ok(75.0) }

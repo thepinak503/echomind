@@ -36,7 +36,7 @@ This will:
 - Install it via pacman
 - Install to `/usr/bin/echomind`
 
-#### Method 2: From AUR (Coming Soon)
+#### Method 2: From AUR
 
 ```bash
 # Using yay
@@ -421,7 +421,7 @@ echo "Tell me a short story" | echomind --stream
 | Platform | Package Manager | Status |
 |----------|----------------|--------|
 | Arch Linux | pacman (via PKGBUILD) | ✅ Available |
-| Arch Linux | AUR | 🔜 Coming Soon |
+| Arch Linux | AUR | ✅ Available |
 | Debian/Ubuntu | dpkg/apt (.deb) | ✅ Available |
 | Debian/Ubuntu | PPA | 🔜 Coming Soon |
 | Fedora | rpm | 🔜 Coming Soon |

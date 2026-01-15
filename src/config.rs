@@ -2,9 +2,9 @@ use crate::error::{EchomindError, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct Config {
     #[serde(default)]
     pub api: ApiConfig,
@@ -109,15 +109,6 @@ impl Default for Defaults {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            api: ApiConfig::default(),
-            defaults: Defaults::default(),
-            presets: HashMap::new(),
-        }
-    }
-}
 
 impl Config {
     pub fn load() -> Result<Self> {

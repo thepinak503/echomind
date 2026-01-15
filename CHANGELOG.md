@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.2] - 2025-11-18
+
+### Fixed
+- Revert Rust edition to 2021 for compatibility
+- Remove code warnings and unused imports
+- Add gcc linker flag to fix ring crate linking issues
+- Update README formatting and remove duplicates
+
+## [0.3.1] - 2025-11-18
+
+### Added
+- Fallback providers support
+- Gemini API key flow improvements
+- Update example config
+- Windows CI enhancements
+
 ## [0.3.0] - 2025-10-30
 
 ### 🎉 Major Release - Comprehensive Enhancements
