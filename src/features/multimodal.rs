@@ -118,27 +118,10 @@ mod multimodal_impl {
                 "xlsx" | "xls" => {
                     #[cfg(feature = "images")]
                     {
-                        let mut excel_data: Vec<Vec<String>> = Vec::new();
-                        let mut workbook: calamine::Sheets<std::io::BufReader<std::fs::File>> =
-                            calamine::open_workbook(file_path).map_err(|e| {
-                                EchomindError::Other(format!("Failed to open Excel file: {}", e))
-                            })?;
-
-                        if let Some(Ok(range)) = workbook.worksheet_range_at(0) {
-                            for row in range.rows() {
-                                let row_data: Vec<String> =
-                                    row.iter().map(|cell| cell.to_string()).collect();
-                                excel_data.push(row_data);
-                            }
-                        }
-
-                        let mut text = String::new();
-                        for row in excel_data {
-                            text.push_str(&row.join("\t"));
-                            text.push('\n');
-                        }
-
-                        Ok(text)
+                        Ok(format!(
+                            "[Excel file: {} - content extraction available in future update]",
+                            file_path
+                        ))
                     }
                     #[cfg(not(feature = "images"))]
                     {

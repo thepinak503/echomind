@@ -43,29 +43,6 @@ pub enum EchomindError {
     Other(String),
 }
 
-// Add platform-specific hints
-fn get_config_hint() -> String {
-    #[cfg(target_os = "windows")]
-    {
-        format!(
-            "{}\\AppData\\Local\\echomind\\config.toml",
-            std::env::var("USERPROFILE").unwrap_or_else(|_| "~".to_string())
-        )
-    }
-    #[cfg(target_os = "macos")]
-    {
-        "~/.config/echomind/config.toml".to_string()
-    }
-    #[cfg(target_os = "linux")]
-    {
-        "~/.config/echomind/config.toml or $XDG_CONFIG_HOME/echomind/config.toml".to_string()
-    }
-    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    {
-        "~/.config/echomind/config.toml (or platform-specific config directory)".to_string()
-    }
-}
-
 impl EchomindError {
     pub fn with_platform_context(self) -> Self {
         match self {

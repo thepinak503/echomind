@@ -3,9 +3,7 @@
 use crate::error::{EchomindError, Result};
 use std::path::PathBuf;
 
-#[cfg(target_os = "linux")]
-use std::os::unix::fs::PermissionsExt;
-
+#[allow(dead_code)]
 pub fn get_config_dir() -> Result<PathBuf> {
     dirs::config_dir()
         .ok_or_else(|| {
@@ -16,6 +14,7 @@ pub fn get_config_dir() -> Result<PathBuf> {
         .map(|p| p.join("echomind"))
 }
 
+#[allow(dead_code)]
 pub fn get_cache_dir() -> Result<PathBuf> {
     dirs::cache_dir()
         .ok_or_else(|| {
@@ -26,6 +25,7 @@ pub fn get_cache_dir() -> Result<PathBuf> {
         .map(|p| p.join("echomind"))
 }
 
+#[allow(dead_code)]
 pub fn get_data_dir() -> Result<PathBuf> {
     dirs::data_dir()
         .ok_or_else(|| {
@@ -36,11 +36,13 @@ pub fn get_data_dir() -> Result<PathBuf> {
         .map(|p| p.join("echomind"))
 }
 
+#[allow(dead_code)]
 pub fn get_home_dir() -> Result<PathBuf> {
     dirs::home_dir()
         .ok_or_else(|| EchomindError::ConfigError("Unable to determine home directory".to_string()))
 }
 
+#[allow(dead_code)]
 pub fn get_config_path() -> PathBuf {
     #[cfg(target_os = "windows")]
     {
@@ -80,6 +82,7 @@ pub fn get_config_path() -> PathBuf {
     }
 }
 
+#[allow(dead_code)]
 pub mod clipboard {
     use crate::error::Result;
 
@@ -112,11 +115,9 @@ pub mod clipboard {
 
     #[cfg(target_os = "windows")]
     fn copy_to_clipboard_windows(text: &str) -> Result<()> {
-        use std::os::windows::process::CommandExt;
         use std::process::Command;
         Command::new("cmd")
             .args(&["/c", "clip"])
-            .creation_flags(0x08000000)
             .stdin(std::process::Stdio::piped())
             .spawn()
             .and_then(|mut child| {
@@ -289,6 +290,7 @@ pub mod clipboard {
     }
 }
 
+#[allow(dead_code)]
 pub mod terminal {
     use crate::error::Result;
 
@@ -325,6 +327,7 @@ pub mod terminal {
     }
 }
 
+#[allow(dead_code)]
 pub mod system {
     pub fn get_platform() -> &'static str {
         #[cfg(target_os = "windows")]
@@ -397,18 +400,6 @@ pub mod system {
         {
             "arm"
         }
-        #[cfg(target_arch = "armv7")]
-        {
-            "armv7"
-        }
-        #[cfg(target_arch = "i686")]
-        {
-            "i686"
-        }
-        #[cfg(target_arch = "x86")]
-        {
-            "x86"
-        }
         #[cfg(target_arch = "wasm32")]
         {
             "wasm32"
@@ -417,9 +408,6 @@ pub mod system {
             target_arch = "x86_64",
             target_arch = "aarch64",
             target_arch = "arm",
-            target_arch = "armv7",
-            target_arch = "i686",
-            target_arch = "x86",
             target_arch = "wasm32"
         )))]
         {
@@ -451,22 +439,20 @@ pub mod system {
         cfg!(unix)
     }
 
+    #[cfg(any(target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))]
     pub fn is_bsd() -> bool {
-        #[cfg(any(target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))]
-        {
-            true
-        }
-        #[cfg(not(any(target_os = "freebsd", target_os = "openbsd", target_os = "netbsd")))]
-        {
-            false
-        }
+        true
+    }
+
+    #[cfg(not(any(target_os = "freebsd", target_os = "openbsd", target_os = "netbsd")))]
+    pub fn is_bsd() -> bool {
+        false
     }
 }
 
+#[allow(dead_code)]
 pub mod fs {
     use crate::error::Result;
-    #[cfg(target_os = "linux")]
-    use std::os::unix::fs::PermissionsExt;
     use std::path::Path;
 
     pub fn create_parent_dirs(path: &Path) -> Result<()> {
@@ -489,6 +475,7 @@ pub mod fs {
 
     #[cfg(target_os = "linux")]
     pub fn set_executable(path: &Path) -> Result<()> {
+        use std::os::unix::fs::PermissionsExt;
         let mut perms = std::fs::metadata(path)?.permissions();
         perms.set_mode(0o755);
         std::fs::set_permissions(path, perms)?;
@@ -501,6 +488,7 @@ pub mod fs {
     }
 }
 
+#[allow(dead_code)]
 pub mod audio {
     #[cfg(feature = "voice")]
     pub fn is_voice_available() -> bool {
@@ -549,6 +537,7 @@ pub mod audio {
     }
 }
 
+#[allow(dead_code)]
 pub mod network {
     use std::time::Duration;
 
@@ -561,11 +550,7 @@ pub mod network {
         {
             4
         }
-        #[cfg(target_os = "macos")]
-        {
-            8
-        }
-        #[cfg(target_os = "linux")]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         {
             8
         }
@@ -579,7 +564,6 @@ pub mod network {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::platform::system;
 
     #[test]
     fn test_platform_detection() {

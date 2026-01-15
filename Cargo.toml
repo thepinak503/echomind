@@ -91,7 +91,7 @@ tempfile = "3.8"
 mockito = "1.2"
 
 [features]
-default = ["voice", "pdf", "images"]
+default = ["voice", "images"]
 voice = ["dep:cpal", "dep:rodio"]
 pdf = ["dep:pdf"]
 images = ["dep:image"]
