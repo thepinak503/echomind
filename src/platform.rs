@@ -574,19 +574,6 @@ pub mod network {
             4
         }
     }
-
-    pub fn supports_keep_alive() -> bool {
-        true
-    }
-
-    pub fn get_user_agent() -> String {
-        format!(
-            "Echomind/{} ({}) Rust/{}",
-            env!("CARGO_PKG_VERSION"),
-            super::system::get_platform(),
-            std::env::consts::OS
-        )
-    }
 }
 
 #[cfg(test)]

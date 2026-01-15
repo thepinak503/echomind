@@ -1,13 +1,13 @@
 # Maintainer: Pinak Dhabu <thepinak503@duck.com>
-pkgname=echomind-git
+pkgname=echomind
 pkgver=0.3.2
 pkgrel=1
 pkgdesc="AI-powered CLI tool with multiple provider support, streaming, and interactive mode"
-arch=('x86_64')
+arch=('x86_64' 'aarch64')
 url="https://github.com/thepinak503/echomind"
 license=('MIT')
 depends=('openssl' 'gcc-libs')
-makedepends=('rust' 'cargo' 'git')
+makedepends=('rust' 'cargo')
 optdepends=('jq: for JSON output formatting')
 provides=('echomind')
 conflicts=('echomind-git')
@@ -15,12 +15,12 @@ source=("https://github.com/thepinak503/echomind/archive/refs/tags/v${pkgver}.ta
 sha256sums=('SKIP')
 
 build() {
-  cd "$srcdir/${pkgname%-git}"
-  cargo build --release
+  cd "$srcdir/${pkgname}-${pkgver}"
+  cargo build --release --locked
 }
 
 package() {
-  cd "$srcdir/${pkgname%-git}-${pkgver}"
+  cd "$srcdir/${pkgname}-${pkgver}"
   install -Dm755 target/release/echomind "$pkgdir/usr/bin/echomind"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 CONTRIBUTING.md "$pkgdir/usr/share/doc/$pkgname/CONTRIBUTING.md"
