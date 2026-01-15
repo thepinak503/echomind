@@ -1,11 +1,10 @@
 use crate::error::{EchomindError, Result};
 use base64::Engine;
-use ring::aead::{AES_256_GCM, LessSafeKey, Nonce, UnboundKey, Aad};
+use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
 use ring::rand::{SecureRandom, SystemRandom};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditLogEntry {
@@ -53,14 +52,16 @@ impl SecurityManager {
 
     pub fn generate_encryption_key(&mut self) -> Result<[u8; 32]> {
         let mut key = [0u8; 32];
-        self.rng.fill(&mut key)
-            .map_err(|e| EchomindError::Other(format!("Failed to generate encryption key: {}", e)))?;
+        self.rng.fill(&mut key).map_err(|e| {
+            EchomindError::Other(format!("Failed to generate encryption key: {}", e))
+        })?;
         self.encryption_key = Some(key);
         Ok(key)
     }
 
     pub fn encrypt_data(&self, data: &str) -> Result<String> {
-        let key = self.encryption_key
+        let key = self
+            .encryption_key
             .ok_or_else(|| EchomindError::Other("No encryption key set".to_string()))?;
 
         let unbound_key = UnboundKey::new(&AES_256_GCM, &key)
@@ -68,14 +69,15 @@ impl SecurityManager {
         let less_safe_key = LessSafeKey::new(unbound_key);
 
         let mut nonce_bytes = [0u8; 12];
-        self.rng.fill(&mut nonce_bytes)
+        self.rng
+            .fill(&mut nonce_bytes)
             .map_err(|e| EchomindError::Other(format!("Failed to generate nonce: {}", e)))?;
         let nonce = Nonce::assume_unique_for_key(nonce_bytes);
 
         let mut in_out = data.as_bytes().to_vec();
 
-
-        let tag = less_safe_key.seal_in_place_separate_tag(nonce, Aad::empty(), &mut in_out)
+        let tag = less_safe_key
+            .seal_in_place_separate_tag(nonce, Aad::empty(), &mut in_out)
             .map_err(|e| EchomindError::Other(format!("Encryption failed: {}", e)))?;
 
         let mut encrypted = nonce_bytes.to_vec();
@@ -86,10 +88,12 @@ impl SecurityManager {
     }
 
     pub fn decrypt_data(&self, encrypted_data: &str) -> Result<String> {
-        let key = self.encryption_key
+        let key = self
+            .encryption_key
             .ok_or_else(|| EchomindError::Other("No encryption key set".to_string()))?;
 
-        let decoded = base64::engine::general_purpose::STANDARD.decode(encrypted_data)
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(encrypted_data)
             .map_err(|e| EchomindError::Other(format!("Failed to decode base64: {}", e)))?;
 
         if decoded.len() < 28 {
@@ -105,19 +109,22 @@ impl SecurityManager {
         let ciphertext = &decoded[28..];
 
         let nonce = Nonce::assume_unique_for_key(
-            nonce_bytes.try_into()
-                .map_err(|_| EchomindError::Other("Invalid nonce".to_string()))?
+            nonce_bytes
+                .try_into()
+                .map_err(|_| EchomindError::Other("Invalid nonce".to_string()))?,
         );
 
         let mut in_out = Vec::new();
         in_out.extend_from_slice(ciphertext);
         in_out.extend_from_slice(tag);
 
-        let plaintext = less_safe_key.open_in_place(nonce, Aad::empty(), &mut in_out)
+        let plaintext = less_safe_key
+            .open_in_place(nonce, Aad::empty(), &mut in_out)
             .map_err(|e| EchomindError::Other(format!("Decryption failed: {}", e)))?;
 
-        String::from_utf8(plaintext.to_vec())
-            .map_err(|e| EchomindError::Other(format!("Failed to convert decrypted data to string: {}", e)))
+        String::from_utf8(plaintext.to_vec()).map_err(|e| {
+            EchomindError::Other(format!("Failed to convert decrypted data to string: {}", e))
+        })
     }
 
     pub fn set_audit_log_file(&mut self, file_path: &str) {
@@ -126,8 +133,9 @@ impl SecurityManager {
 
     pub fn log_audit_event(&mut self, entry: AuditLogEntry) -> Result<()> {
         if let Some(ref log_file) = self.audit_log_file {
-            let log_entry = serde_json::to_string(&entry)
-                .map_err(|e| EchomindError::Other(format!("Failed to serialize audit entry: {}", e)))?;
+            let log_entry = serde_json::to_string(&entry).map_err(|e| {
+                EchomindError::Other(format!("Failed to serialize audit entry: {}", e))
+            })?;
 
             fs::write(log_file, format!("{}\n", log_entry))
                 .map_err(|e| EchomindError::Other(format!("Failed to write audit log: {}", e)))?;
@@ -139,12 +147,17 @@ impl SecurityManager {
         let mut redacted = text.to_string();
 
         // Redact email addresses
-        let email_regex = regex::Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b").unwrap();
-        redacted = email_regex.replace_all(&redacted, "[EMAIL_REDACTED]").to_string();
+        let email_regex =
+            regex::Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b").unwrap();
+        redacted = email_regex
+            .replace_all(&redacted, "[EMAIL_REDACTED]")
+            .to_string();
 
         // Redact phone numbers
         let phone_regex = regex::Regex::new(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b").unwrap();
-        redacted = phone_regex.replace_all(&redacted, "[PHONE_REDACTED]").to_string();
+        redacted = phone_regex
+            .replace_all(&redacted, "[PHONE_REDACTED]")
+            .to_string();
 
         // Redact credit card numbers
         let cc_regex = regex::Regex::new(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b").unwrap();
@@ -152,7 +165,9 @@ impl SecurityManager {
 
         // Redact social security numbers
         let ssn_regex = regex::Regex::new(r"\b\d{3}-\d{2}-\d{4}\b").unwrap();
-        redacted = ssn_regex.replace_all(&redacted, "[SSN_REDACTED]").to_string();
+        redacted = ssn_regex
+            .replace_all(&redacted, "[SSN_REDACTED]")
+            .to_string();
 
         redacted
     }
@@ -185,7 +200,9 @@ impl SecurityManager {
         let permissions = std::env::var("ECHOMIND_PERMISSIONS").unwrap_or_default();
         let required_permission = format!("{}:{}", resource, action);
 
-        Ok(permissions.split(',').any(|p| p.trim() == required_permission))
+        Ok(permissions
+            .split(',')
+            .any(|p| p.trim() == required_permission))
     }
 
     pub fn sanitize_input(&self, input: &str) -> String {
@@ -219,8 +236,9 @@ impl SecurityManager {
 
     pub fn generate_session_token(&self) -> Result<String> {
         let mut token_bytes = [0u8; 32];
-        self.rng.fill(&mut token_bytes)
-            .map_err(|e| EchomindError::Other(format!("Failed to generate session token: {}", e)))?;
+        self.rng.fill(&mut token_bytes).map_err(|e| {
+            EchomindError::Other(format!("Failed to generate session token: {}", e))
+        })?;
 
         Ok(hex::encode(token_bytes))
     }
@@ -237,20 +255,23 @@ impl SecurityManager {
 
         let encrypted = self.encrypt_data(&history_content)?;
 
-        fs::write(output_file, encrypted)
-            .map_err(|e| EchomindError::FileError(format!("Failed to write encrypted history: {}", e)))?;
+        fs::write(output_file, encrypted).map_err(|e| {
+            EchomindError::FileError(format!("Failed to write encrypted history: {}", e))
+        })?;
 
         Ok(())
     }
 
     pub fn import_encrypted_history(&self, encrypted_file: &str, output_file: &str) -> Result<()> {
-        let encrypted_content = fs::read_to_string(encrypted_file)
-            .map_err(|e| EchomindError::FileError(format!("Failed to read encrypted file: {}", e)))?;
+        let encrypted_content = fs::read_to_string(encrypted_file).map_err(|e| {
+            EchomindError::FileError(format!("Failed to read encrypted file: {}", e))
+        })?;
 
         let decrypted = self.decrypt_data(&encrypted_content)?;
 
-        fs::write(output_file, decrypted)
-            .map_err(|e| EchomindError::FileError(format!("Failed to write decrypted history: {}", e)))?;
+        fs::write(output_file, decrypted).map_err(|e| {
+            EchomindError::FileError(format!("Failed to write decrypted history: {}", e))
+        })?;
 
         Ok(())
     }

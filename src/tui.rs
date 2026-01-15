@@ -55,8 +55,9 @@ pub struct App {
 
 impl App {
     pub fn new(config: Config, args: Args) -> Self {
-        let provider = Provider::from_string(args.provider.as_ref().unwrap_or(&config.api.provider))
-            .unwrap_or(Provider::Chat);
+        let provider =
+            Provider::from_string(args.provider.as_ref().unwrap_or(&config.api.provider))
+                .unwrap_or(Provider::Chat);
         let model = args.model.as_ref().unwrap_or(&config.api.model).clone();
         let temperature = args.temperature.unwrap_or(config.defaults.temperature);
         let max_tokens = args.max_tokens.or(config.defaults.max_tokens);
@@ -88,7 +89,11 @@ impl App {
 
     fn add_message(&mut self, role: String, content: String) {
         let timestamp = chrono::Local::now().format("%H:%M:%S").to_string();
-        self.messages.push(AppMessage { role, content, timestamp });
+        self.messages.push(AppMessage {
+            role,
+            content,
+            timestamp,
+        });
         let _ = self.save_messages();
     }
 
@@ -96,7 +101,9 @@ impl App {
         let json = serde_json::to_string(&self.messages)?;
         let encrypted = encrypt(json.as_bytes())?;
         let config_dir = dirs::config_dir()
-            .ok_or(crate::error::EchomindError::ConfigError("No config dir".to_string()))?
+            .ok_or(crate::error::EchomindError::ConfigError(
+                "No config dir".to_string(),
+            ))?
             .join("echomind");
         fs::create_dir_all(&config_dir)?;
         let path = config_dir.join("chat_history.enc");
@@ -120,7 +127,8 @@ impl App {
                 Some("/help") | Some("/h") => {
                     self.add_message(
                         "System".to_string(),
-                        "Commands: /help, /clear, /export, /settings, /model <name>, /temp <value>".to_string(),
+                        "Commands: /help, /clear, /export, /settings, /model <name>, /temp <value>"
+                            .to_string(),
                     );
                     self.input.clear();
                     true
@@ -146,16 +154,25 @@ impl App {
                 }
                 Some("/model") if parts.len() > 1 => {
                     self.model = parts[1..].join(" ");
-                    self.add_message("System".to_string(), format!("Model changed to: {}", self.model));
+                    self.add_message(
+                        "System".to_string(),
+                        format!("Model changed to: {}", self.model),
+                    );
                     self.input.clear();
                     true
                 }
                 Some("/temp") if parts.len() > 1 => {
                     if let Ok(temp) = parts[1].parse::<f32>() {
                         self.temperature = temp.clamp(0.0, 2.0);
-                        self.add_message("System".to_string(), format!("Temperature set to: {:.2}", self.temperature));
+                        self.add_message(
+                            "System".to_string(),
+                            format!("Temperature set to: {:.2}", self.temperature),
+                        );
                     } else {
-                        self.add_message("System".to_string(), "Invalid temperature value".to_string());
+                        self.add_message(
+                            "System".to_string(),
+                            "Invalid temperature value".to_string(),
+                        );
                     }
                     self.input.clear();
                     true
@@ -174,7 +191,10 @@ impl App {
                     true
                 }
                 _ => {
-                    self.add_message("System".to_string(), "Unknown command. Type /help for available commands.".to_string());
+                    self.add_message(
+                        "System".to_string(),
+                        "Unknown command. Type /help for available commands.".to_string(),
+                    );
                     self.input.clear();
                     true
                 }
@@ -192,7 +212,9 @@ fn save_chat_history(app: &App) -> Result<()> {
 
 fn load_chat_history(_config: &Config) -> Result<Vec<AppMessage>> {
     let config_dir = dirs::config_dir()
-        .ok_or(crate::error::EchomindError::ConfigError("No config dir".to_string()))?
+        .ok_or(crate::error::EchomindError::ConfigError(
+            "No config dir".to_string(),
+        ))?
         .join("echomind");
     let path = config_dir.join("chat_history.enc");
     if !path.exists() {
@@ -226,7 +248,8 @@ fn decrypt(data: &[u8]) -> Result<Vec<u8>> {
     let mut in_out = data.to_vec();
     let nonce_bytes = [0u8; 12];
     let nonce = Nonce::assume_unique_for_key(nonce_bytes);
-    let decrypted = key.open_in_place(nonce, Aad::empty(), &mut in_out)
+    let decrypted = key
+        .open_in_place(nonce, Aad::empty(), &mut in_out)
         .map_err(|_| crate::error::EchomindError::ConfigError("Decryption failed".to_string()))?;
     Ok(decrypted.to_vec())
 }
@@ -306,11 +329,14 @@ pub async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io
                                         app.add_message("You".to_string(), input.clone());
                                         app.history.push(input.clone());
                                         app.history_index = None;
-                                        app.input.clear();  // Clear input immediately
+                                        app.input.clear(); // Clear input immediately
                                         app.state = AppState::Processing;
 
                                         // Add placeholder for response
-                                        app.add_message(app.provider.name().to_string(), String::new());
+                                        app.add_message(
+                                            app.provider.name().to_string(),
+                                            String::new(),
+                                        );
 
                                         let provider = app.provider.clone();
                                         let model = app.model.clone();
@@ -325,8 +351,17 @@ pub async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io
 
                                         tokio::task::spawn(async move {
                                             if let Err(e) = process_query(
-                                                input, provider, model, temperature, max_tokens,
-                                                top_p, top_k, stream, config, args, tx_process.clone(),
+                                                input,
+                                                provider,
+                                                model,
+                                                temperature,
+                                                max_tokens,
+                                                top_p,
+                                                top_k,
+                                                stream,
+                                                config,
+                                                args,
+                                                tx_process.clone(),
                                             )
                                             .await
                                             {
@@ -338,7 +373,7 @@ pub async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io
                                 }
                             } else if let AppState::Response = app.state {
                                 app.state = AppState::Input;
-                                app.input.clear();  // Clear input when transitioning back
+                                app.input.clear(); // Clear input when transitioning back
                             }
                         }
                         KeyCode::Char(c) => {
@@ -439,10 +474,10 @@ fn ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),  // Header
-            Constraint::Min(4),     // Chat area
-            Constraint::Length(4),  // Input area
-            Constraint::Length(2),  // Footer
+            Constraint::Length(3), // Header
+            Constraint::Min(4),    // Chat area
+            Constraint::Length(4), // Input area
+            Constraint::Length(2), // Footer
         ])
         .split(size);
 
@@ -453,11 +488,22 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     let header_content = vec![
         Line::from(vec![
-            Span::styled("  Echomind TUI", Style::default().add_modifier(Modifier::BOLD).fg(Color::Cyan)),
+            Span::styled(
+                "  Echomind TUI",
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(Color::Cyan),
+            ),
             Span::raw("  |  "),
-            Span::styled(format!("Provider: {}", app.provider.name()), Style::default().fg(Color::Green)),
+            Span::styled(
+                format!("Provider: {}", app.provider.name()),
+                Style::default().fg(Color::Green),
+            ),
             Span::raw("  |  "),
-            Span::styled(format!("Model: {}", app.model), Style::default().fg(Color::Yellow)),
+            Span::styled(
+                format!("Model: {}", app.model),
+                Style::default().fg(Color::Yellow),
+            ),
         ]),
         Line::from(vec![
             Span::raw("  "),
@@ -491,19 +537,18 @@ fn ui(f: &mut Frame, app: &mut App) {
         .iter()
         .map(|m| {
             let role_style = match m.role.as_str() {
-                "You" => Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD),
-                "System" => Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC),
+                "You" => Style::default()
+                    .fg(Color::Blue)
+                    .add_modifier(Modifier::BOLD),
+                "System" => Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::ITALIC),
                 _ => Style::default().fg(Color::Green),
             };
 
             let prefix = format!("[{}] {}: ", m.timestamp, m.role);
             let full_text = format!("{}{}", prefix, m.content);
-            Line::from(vec![
-                Span::styled(
-                    full_text,
-                    role_style
-                ),
-            ])
+            Line::from(vec![Span::styled(full_text, role_style)])
         })
         .collect();
 
@@ -539,7 +584,12 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     let input_content = vec![
         Line::from(Span::raw(&app.input)),
-        Line::from(Span::styled(hint_text, Style::default().add_modifier(Modifier::ITALIC).fg(Color::Gray))),
+        Line::from(Span::styled(
+            hint_text,
+            Style::default()
+                .add_modifier(Modifier::ITALIC)
+                .fg(Color::Gray),
+        )),
     ];
 
     let input_para = Paragraph::new(input_content)
@@ -574,7 +624,10 @@ fn ui(f: &mut Frame, app: &mut App) {
         ]
     };
 
-    let footer = Paragraph::new(footer_lines)
-        .style(Style::default().fg(Color::Gray).add_modifier(Modifier::ITALIC));
+    let footer = Paragraph::new(footer_lines).style(
+        Style::default()
+            .fg(Color::Gray)
+            .add_modifier(Modifier::ITALIC),
+    );
     f.render_widget(footer, chunks[3]);
 }

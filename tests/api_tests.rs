@@ -80,10 +80,7 @@ fn test_provider_endpoints() {
         Provider::Mistral.endpoint(),
         "https://api.mistral.ai/v1/chat/completions"
     );
-    assert_eq!(
-        Provider::Cohere.endpoint(),
-        "https://api.cohere.ai/v1/chat"
-    );
+    assert_eq!(Provider::Cohere.endpoint(), "https://api.cohere.ai/v1/chat");
 }
 
 #[test]
@@ -100,10 +97,7 @@ fn test_provider_requires_api_key() {
 
 #[test]
 fn test_message_creation() {
-    let msg = Message::text(
-        "user".to_string(),
-        "Hello, AI!".to_string(),
-    );
+    let msg = Message::text("user".to_string(), "Hello, AI!".to_string());
     assert_eq!(msg.role, "user");
     assert_eq!(msg.get_text(), Some("Hello, AI!"));
 }
@@ -118,6 +112,8 @@ fn test_chat_request_serialization() {
         model: Some("gpt-4".to_string()),
         temperature: Some(0.7),
         max_tokens: Some(1000),
+        top_p: None,
+        top_k: None,
         stream: None,
     };
 
@@ -130,13 +126,12 @@ fn test_chat_request_serialization() {
 #[test]
 fn test_chat_request_optional_fields() {
     let request = ChatRequest {
-        messages: vec![Message::text(
-            "user".to_string(),
-            "Test".to_string(),
-        )],
+        messages: vec![Message::text("user".to_string(), "Test".to_string())],
         model: None,
         temperature: None,
         max_tokens: None,
+        top_p: None,
+        top_k: None,
         stream: None,
     };
 
@@ -155,5 +150,8 @@ async fn test_missing_api_key_error() {
 
     let result = ApiClient::new(provider, api_key, timeout);
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), EchomindError::MissingApiKey(_)));
+    assert!(matches!(
+        result.unwrap_err(),
+        EchomindError::MissingApiKey(_)
+    ));
 }

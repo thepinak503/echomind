@@ -96,15 +96,21 @@ impl CollaborationManager {
             is_active: true,
             messages: Vec::new(),
         };
-        
+
         self.sessions.insert(session.id.clone(), session.clone());
         Ok(session)
     }
 
-    pub fn join_session(&mut self, session_id: &str, participant_name: &str) -> Result<CollaborationSession> {
-        let session = self.sessions.get_mut(session_id)
+    pub fn join_session(
+        &mut self,
+        session_id: &str,
+        participant_name: &str,
+    ) -> Result<CollaborationSession> {
+        let session = self
+            .sessions
+            .get_mut(session_id)
             .ok_or_else(|| EchomindError::Other(format!("Session {} not found", session_id)))?;
-        
+
         let participant = Participant {
             id: Uuid::new_v4().to_string(),
             name: participant_name.to_string(),
@@ -112,9 +118,9 @@ impl CollaborationManager {
             joined_at: chrono::Utc::now(),
             is_online: true,
         };
-        
+
         session.participants.push(participant);
-        
+
         let system_message = CollaborationMessage {
             id: Uuid::new_v4().to_string(),
             participant_id: "system".to_string(),
@@ -122,16 +128,22 @@ impl CollaborationManager {
             timestamp: chrono::Utc::now(),
             message_type: MessageType::System,
         };
-        
+
         session.messages.push(system_message);
         Ok(session.clone())
     }
 
     pub fn leave_session(&mut self, session_id: &str, participant_id: &str) -> Result<()> {
-        let session = self.sessions.get_mut(session_id)
+        let session = self
+            .sessions
+            .get_mut(session_id)
             .ok_or_else(|| EchomindError::Other(format!("Session {} not found", session_id)))?;
-        
-        if let Some(pos) = session.participants.iter().position(|p| p.id == participant_id) {
+
+        if let Some(pos) = session
+            .participants
+            .iter()
+            .position(|p| p.id == participant_id)
+        {
             let participant = &session.participants[pos];
             let system_message = CollaborationMessage {
                 id: Uuid::new_v4().to_string(),
@@ -140,11 +152,11 @@ impl CollaborationManager {
                 timestamp: chrono::Utc::now(),
                 message_type: MessageType::System,
             };
-            
+
             session.messages.push(system_message);
             session.participants.remove(pos);
         }
-        
+
         Ok(())
     }
 
@@ -155,9 +167,11 @@ impl CollaborationManager {
         content: &str,
         message_type: MessageType,
     ) -> Result<()> {
-        let session = self.sessions.get_mut(session_id)
+        let session = self
+            .sessions
+            .get_mut(session_id)
             .ok_or_else(|| EchomindError::Other(format!("Session {} not found", session_id)))?;
-        
+
         let message = CollaborationMessage {
             id: Uuid::new_v4().to_string(),
             participant_id: participant_id.to_string(),
@@ -165,7 +179,7 @@ impl CollaborationManager {
             timestamp: chrono::Utc::now(),
             message_type,
         };
-        
+
         session.messages.push(message);
         Ok(())
     }
@@ -188,37 +202,50 @@ impl CollaborationManager {
         let link = ShareableLink {
             id: Uuid::new_v4().to_string(),
             conversation_id: conversation_id.to_string(),
-            expires_at: expires_in_hours.map(|h| chrono::Utc::now() + chrono::Duration::hours(h as i64)),
+            expires_at: expires_in_hours
+                .map(|h| chrono::Utc::now() + chrono::Duration::hours(h as i64)),
             password_protected,
             allowed_views: max_views.unwrap_or(100),
             current_views: 0,
             created_at: chrono::Utc::now(),
         };
-        
+
         self.shareable_links.insert(link.id.clone(), link.clone());
         Ok(link)
     }
 
-    pub fn get_shareable_content(&mut self, link_id: &str, password: Option<&str>) -> Result<String> {
+    pub fn get_shareable_content(
+        &mut self,
+        link_id: &str,
+        password: Option<&str>,
+    ) -> Result<String> {
         let conversation_id = {
-            let link = self.shareable_links.get(link_id)
+            let link = self
+                .shareable_links
+                .get(link_id)
                 .ok_or_else(|| EchomindError::Other("Shareable link not found".to_string()))?;
 
             // Check if link has expired
             if let Some(expires_at) = link.expires_at {
                 if chrono::Utc::now() > expires_at {
-                    return Err(EchomindError::Other("Shareable link has expired".to_string()));
+                    return Err(EchomindError::Other(
+                        "Shareable link has expired".to_string(),
+                    ));
                 }
             }
 
             // Check view limit
             if link.current_views >= link.allowed_views {
-                return Err(EchomindError::Other("Shareable link view limit exceeded".to_string()));
+                return Err(EchomindError::Other(
+                    "Shareable link view limit exceeded".to_string(),
+                ));
             }
 
             // Check password if required
             if link.password_protected && password.is_none() {
-                return Err(EchomindError::Other("Password required for this link".to_string()));
+                return Err(EchomindError::Other(
+                    "Password required for this link".to_string(),
+                ));
             }
 
             link.conversation_id.clone()
@@ -230,66 +257,87 @@ impl CollaborationManager {
         }
 
         // Return conversation content (placeholder)
-        Ok(format!("Shared conversation content for: {}", conversation_id))
+        Ok(format!(
+            "Shared conversation content for: {}",
+            conversation_id
+        ))
     }
 
     pub fn export_session(&self, session_id: &str, format: &str) -> Result<String> {
-        let session = self.sessions.get(session_id)
+        let session = self
+            .sessions
+            .get(session_id)
             .ok_or_else(|| EchomindError::Other(format!("Session {} not found", session_id)))?;
-        
+
         match format {
-            "json" => {
-                serde_json::to_string_pretty(session)
-                    .map_err(|e| EchomindError::ParseError(format!("Failed to export session: {}", e)))
-            }
+            "json" => serde_json::to_string_pretty(session)
+                .map_err(|e| EchomindError::ParseError(format!("Failed to export session: {}", e))),
             "markdown" => {
                 let mut md = String::new();
                 md.push_str(&format!("# {}\n\n", session.name));
                 if let Some(description) = &session.description {
                     md.push_str(&format!("{}\n\n", description));
                 }
-                
+
                 md.push_str("## Participants\n\n");
                 for participant in &session.participants {
-                    md.push_str(&format!("- **{}** ({})\n", participant.name, format!("{:?}", participant.role)));
+                    md.push_str(&format!(
+                        "- **{}** ({})\n",
+                        participant.name,
+                        format!("{:?}", participant.role)
+                    ));
                 }
-                
+
                 md.push_str("\n## Messages\n\n");
                 for message in &session.messages {
-                    let participant_name = session.participants.iter()
+                    let participant_name = session
+                        .participants
+                        .iter()
                         .find(|p| p.id == message.participant_id)
                         .map(|p| p.name.as_str())
                         .unwrap_or("Unknown");
-                    
-                    md.push_str(&format!("**{}** - {}\n\n", participant_name, message.timestamp.format("%Y-%m-%d %H:%M:%S")));
+
+                    md.push_str(&format!(
+                        "**{}** - {}\n\n",
+                        participant_name,
+                        message.timestamp.format("%Y-%m-%d %H:%M:%S")
+                    ));
                     md.push_str(&format!("{}\n\n", message.content));
                 }
-                
+
                 Ok(md)
             }
-            _ => Err(EchomindError::Other(format!("Unsupported export format: {}", format))),
+            _ => Err(EchomindError::Other(format!(
+                "Unsupported export format: {}",
+                format
+            ))),
         }
     }
 
     pub fn get_session_analytics(&self, session_id: &str) -> Result<SessionAnalytics> {
-        let session = self.sessions.get(session_id)
+        let session = self
+            .sessions
+            .get(session_id)
             .ok_or_else(|| EchomindError::Other(format!("Session {} not found", session_id)))?;
-        
+
         let total_messages = session.messages.len();
         let participant_count = session.participants.len();
         let duration = chrono::Utc::now() - session.created_at;
-        
-        let messages_by_participant: HashMap<String, usize> = session.messages.iter()
+
+        let messages_by_participant: HashMap<String, usize> = session
+            .messages
+            .iter()
             .filter(|m| m.message_type != MessageType::System)
             .fold(HashMap::new(), |mut acc, msg| {
                 *acc.entry(msg.participant_id.clone()).or_insert(0) += 1;
                 acc
             });
-        
-        let most_active_participant = messages_by_participant.iter()
+
+        let most_active_participant = messages_by_participant
+            .iter()
             .max_by_key(|(_, count)| *count)
             .map(|(id, count)| (id.clone(), *count));
-        
+
         Ok(SessionAnalytics {
             session_id: session_id.to_string(),
             total_messages,
@@ -302,11 +350,13 @@ impl CollaborationManager {
     }
 
     pub fn end_session(&mut self, session_id: &str) -> Result<()> {
-        let session = self.sessions.get_mut(session_id)
+        let session = self
+            .sessions
+            .get_mut(session_id)
             .ok_or_else(|| EchomindError::Other(format!("Session {} not found", session_id)))?;
-        
+
         session.is_active = false;
-        
+
         let system_message = CollaborationMessage {
             id: Uuid::new_v4().to_string(),
             participant_id: "system".to_string(),
@@ -314,7 +364,7 @@ impl CollaborationManager {
             timestamp: chrono::Utc::now(),
             message_type: MessageType::System,
         };
-        
+
         session.messages.push(system_message);
         Ok(())
     }

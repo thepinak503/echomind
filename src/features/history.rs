@@ -77,8 +77,9 @@ impl HistoryManager {
     }
 
     pub fn save_entries(&self, entries: &[HistoryEntry]) -> Result<()> {
-        let json = serde_json::to_string_pretty(entries)
-            .map_err(|e| EchomindError::ParseError(format!("Failed to serialize history: {}", e)))?;
+        let json = serde_json::to_string_pretty(entries).map_err(|e| {
+            EchomindError::ParseError(format!("Failed to serialize history: {}", e))
+        })?;
 
         fs::write(&self.history_file, json)
             .map_err(|e| EchomindError::FileError(format!("Failed to write history: {}", e)))?;
@@ -164,14 +165,12 @@ impl HistoryManager {
         };
 
         match format {
-            "json" => {
-                serde_json::to_string_pretty(&entries)
-                    .map_err(|e| EchomindError::ParseError(format!("Failed to export JSON: {}", e)))
-            }
+            "json" => serde_json::to_string_pretty(&entries)
+                .map_err(|e| EchomindError::ParseError(format!("Failed to export JSON: {}", e))),
             "csv" => {
                 let mut csv = String::new();
                 csv.push_str("ID,Timestamp,Role,Content,Provider,Model,HasImage,TokenCount,CostEstimate,Tags\n");
-                
+
                 for entry in entries {
                     let tags_str = entry.tags.join(";");
                     csv.push_str(&format!(
@@ -188,16 +187,23 @@ impl HistoryManager {
                         tags_str
                     ));
                 }
-                
+
                 Ok(csv)
             }
             "markdown" => {
                 let mut md = String::new();
                 md.push_str("# Conversation History\n\n");
-                
+
                 for entry in entries {
-                    md.push_str(&format!("## {} - {}\n\n", entry.role.to_uppercase(), entry.timestamp.format("%Y-%m-%d %H:%M:%S")));
-                    md.push_str(&format!("**Provider:** {}\n", entry.provider.unwrap_or_default()));
+                    md.push_str(&format!(
+                        "## {} - {}\n\n",
+                        entry.role.to_uppercase(),
+                        entry.timestamp.format("%Y-%m-%d %H:%M:%S")
+                    ));
+                    md.push_str(&format!(
+                        "**Provider:** {}\n",
+                        entry.provider.unwrap_or_default()
+                    ));
                     md.push_str(&format!("**Model:** {}\n", entry.model.unwrap_or_default()));
                     if !entry.tags.is_empty() {
                         md.push_str(&format!("**Tags:** {}\n", entry.tags.join(", ")));
@@ -206,10 +212,13 @@ impl HistoryManager {
                     md.push_str(&entry.content);
                     md.push_str("\n```\n\n");
                 }
-                
+
                 Ok(md)
             }
-            _ => Err(EchomindError::Other(format!("Unsupported export format: {}", format))),
+            _ => Err(EchomindError::Other(format!(
+                "Unsupported export format: {}",
+                format
+            ))),
         }
     }
 
@@ -255,12 +264,10 @@ impl HistoryManager {
         }
 
         // Convert to sorted vectors
-        stats.most_used_models = model_counts.into_iter()
-            .collect::<Vec<_>>();
+        stats.most_used_models = model_counts.into_iter().collect::<Vec<_>>();
         stats.most_used_models.sort_by(|a, b| b.1.cmp(&a.1));
 
-        stats.most_used_providers = provider_counts.into_iter()
-            .collect::<Vec<_>>();
+        stats.most_used_providers = provider_counts.into_iter().collect::<Vec<_>>();
         stats.most_used_providers.sort_by(|a, b| b.1.cmp(&a.1));
 
         Ok(stats)
@@ -268,7 +275,7 @@ impl HistoryManager {
 
     pub fn merge_histories(&self, other_history_files: &[&str]) -> Result<()> {
         let mut all_entries = self.load_entries()?;
-        
+
         for file in other_history_files {
             let other_manager = HistoryManager::new(file);
             let other_entries = other_manager.load_entries()?;
@@ -285,7 +292,7 @@ impl HistoryManager {
 
     pub fn add_tags(&mut self, entry_id: &str, tags: Vec<String>) -> Result<()> {
         let mut entries = self.load_entries()?;
-        
+
         if let Some(entry) = entries.iter_mut().find(|e| e.id == entry_id) {
             for tag in tags {
                 if !entry.tags.contains(&tag) {
@@ -295,7 +302,10 @@ impl HistoryManager {
             self.save_entries(&entries)?;
             Ok(())
         } else {
-            Err(EchomindError::Other(format!("Entry with ID {} not found", entry_id)))
+            Err(EchomindError::Other(format!(
+                "Entry with ID {} not found",
+                entry_id
+            )))
         }
     }
 

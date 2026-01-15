@@ -129,7 +129,6 @@ pub struct Args {
     // /// Image file to include with the request (for vision models)
     // #[arg(long)]
     // pub image: Option<String>,
-
     /// Optional prompt to append to input (useful when piping)
     #[arg(value_name = "PROMPT")]
     pub prompt: Option<String>,

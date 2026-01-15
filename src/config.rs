@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub api: ApiConfig,
@@ -108,7 +107,6 @@ impl Default for Defaults {
         }
     }
 }
-
 
 impl Config {
     pub fn load() -> Result<Self> {

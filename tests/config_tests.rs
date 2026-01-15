@@ -26,6 +26,8 @@ fn test_config_serialization() {
             max_tokens: Some(1000),
             coder_mode: true,
             stream: false,
+            top_p: None,
+            top_k: None,
         },
         presets: std::collections::HashMap::new(),
     };

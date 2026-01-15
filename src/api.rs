@@ -122,7 +122,8 @@ pub struct GeminiResponse {
 
 impl GeminiResponse {
     pub fn first_text(&self) -> Result<String> {
-        self.candidates.first()
+        self.candidates
+            .first()
             .and_then(|c| c.content.parts.first())
             .map(|p| p.text.clone())
             .ok_or(EchomindError::EmptyResponse)
@@ -137,8 +138,15 @@ pub struct GeminiCandidate {
 impl CohereRequest {
     pub fn from_chat_request(request: &ChatRequest) -> Self {
         Self {
-            message: request.messages.last().map(|m| m.content.to_string()).unwrap_or_default(),
-            model: request.model.clone().unwrap_or_else(|| "command".to_string()),
+            message: request
+                .messages
+                .last()
+                .map(|m| m.content.to_string())
+                .unwrap_or_default(),
+            model: request
+                .model
+                .clone()
+                .unwrap_or_else(|| "command".to_string()),
             temperature: request.temperature.unwrap_or(0.7),
             max_tokens: request.max_tokens,
         }
@@ -147,9 +155,13 @@ impl CohereRequest {
 
 impl GeminiRequest {
     pub fn from_chat_request(request: &ChatRequest) -> Result<Self> {
-        let parts = request.messages.iter().map(|m| GeminiPart {
-            text: m.content.to_string(),
-        }).collect();
+        let parts = request
+            .messages
+            .iter()
+            .map(|m| GeminiPart {
+                text: m.content.to_string(),
+            })
+            .collect();
 
         Ok(Self {
             contents: vec![GeminiContent { parts }],
@@ -325,15 +337,17 @@ impl ApiClient {
             }
         }
 
-        let client = Arc::new(Client::builder()
-            .timeout(Duration::from_secs(timeout))
-            .pool_max_idle_per_host(20) // Increased connection pooling
-            .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
-            .tcp_keepalive(Duration::from_secs(60)) // TCP keepalive
-            .tcp_nodelay(true) // Disable Nagle's algorithm for lower latency
-            .user_agent("echomind/0.3.0") // Set user agent
-            .build()
-            .map_err(|e| EchomindError::NetworkError(e.to_string()))?);
+        let client = Arc::new(
+            Client::builder()
+                .timeout(Duration::from_secs(timeout))
+                .pool_max_idle_per_host(20) // Increased connection pooling
+                .pool_idle_timeout(Duration::from_secs(90)) // Keep connections alive longer
+                .tcp_keepalive(Duration::from_secs(60)) // TCP keepalive
+                .tcp_nodelay(true) // Disable Nagle's algorithm for lower latency
+                .user_agent("echomind/0.3.0") // Set user agent
+                .build()
+                .map_err(|e| EchomindError::NetworkError(e.to_string()))?,
+        );
 
         Ok(Self {
             client,
@@ -372,7 +386,9 @@ impl ApiClient {
                     401 => "Check your Gemini API key is correct and has the right permissions.",
                     403 => "Your API key may not have access to this resource or may be expired.",
                     429 => "Rate limit exceeded. Try again later or reduce request frequency.",
-                    500..=599 => "Server error. The Gemini API service may be down, try again later.",
+                    500..=599 => {
+                        "Server error. The Gemini API service may be down, try again later."
+                    }
                     _ => "Check the Gemini API documentation for this status code.",
                 };
                 return Err(EchomindError::ApiError {
@@ -445,46 +461,48 @@ impl ApiClient {
 
                 let response = req_builder.send().await?;
 
-        // Check for API errors
-        if !response.status().is_success() {
-            let status = response.status().as_u16();
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            let suggestion = match status {
-                401 => "Check your API key is correct and has the right permissions.",
-                403 => "Your API key may not have access to this resource or may be expired.",
-                429 => "Rate limit exceeded. Try again later or reduce request frequency.",
-                500..=599 => "Server error. The API service may be down, try again later.",
-                _ => "Check the API documentation for this status code.",
-            };
-            return Err(EchomindError::ApiError {
-                status,
-                message: error_text,
-                suggestion: suggestion.to_string(),
-            });
-        }
+                // Check for API errors
+                if !response.status().is_success() {
+                    let status = response.status().as_u16();
+                    let error_text = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown error".to_string());
+                    let suggestion = match status {
+                        401 => "Check your API key is correct and has the right permissions.",
+                        403 => {
+                            "Your API key may not have access to this resource or may be expired."
+                        }
+                        429 => "Rate limit exceeded. Try again later or reduce request frequency.",
+                        500..=599 => "Server error. The API service may be down, try again later.",
+                        _ => "Check the API documentation for this status code.",
+                    };
+                    return Err(EchomindError::ApiError {
+                        status,
+                        message: error_text,
+                        suggestion: suggestion.to_string(),
+                    });
+                }
 
-        let cohere_response: CohereResponse = response.json().await?;
+                let cohere_response: CohereResponse = response.json().await?;
 
-        let result = cohere_response.text;
+                let result = cohere_response.text;
 
-        // Cache the result
-        if request.stream.is_none() || !request.stream.unwrap_or(false) {
-            let cache_key = self.generate_cache_key(&request);
-            if let Ok(mut cache) = self.cache.lock() {
-                let entry = CacheEntry {
-                    response: result.clone(),
-                    timestamp: Instant::now(),
-                    ttl: Duration::from_secs(300), // 5 minute TTL
-                };
-                cache.put(cache_key, entry);
+                // Cache the result
+                if request.stream.is_none() || !request.stream.unwrap_or(false) {
+                    let cache_key = self.generate_cache_key(&request);
+                    if let Ok(mut cache) = self.cache.lock() {
+                        let entry = CacheEntry {
+                            response: result.clone(),
+                            timestamp: Instant::now(),
+                            ttl: Duration::from_secs(300), // 5 minute TTL
+                        };
+                        cache.put(cache_key, entry);
+                    }
+                }
+
+                Ok(result)
             }
-        }
-
-        Ok(result)
-            },
             Provider::Gemini => {
                 let base_endpoint = self.provider.endpoint();
                 let model = request.model.as_deref().unwrap_or("gemini-pro");
@@ -510,10 +528,16 @@ impl ApiClient {
                         .unwrap_or_else(|_| "Unknown error".to_string());
                     let suggestion = match status {
                         400 => "Check your request format and model name.",
-                        401 => "Check your Gemini API key is correct and has the right permissions.",
-                        403 => "Your API key may not have access to this resource or may be expired.",
+                        401 => {
+                            "Check your Gemini API key is correct and has the right permissions."
+                        }
+                        403 => {
+                            "Your API key may not have access to this resource or may be expired."
+                        }
                         429 => "Rate limit exceeded. Try again later or reduce request frequency.",
-                        500..=599 => "Server error. The Gemini API service may be down, try again later.",
+                        500..=599 => {
+                            "Server error. The Gemini API service may be down, try again later."
+                        }
                         _ => "Check the Gemini API documentation for this status code.",
                     };
                     return Err(EchomindError::ApiError {
@@ -540,64 +564,66 @@ impl ApiClient {
                 }
 
                 Ok(result)
-            },
+            }
             _ => {
                 let endpoint = self.provider.endpoint();
 
-            let mut req_builder = self.client.post(endpoint).json(&request);
+                let mut req_builder = self.client.post(endpoint).json(&request);
 
-            // Add authorization header if API key is available
-            if let Some(ref key) = self.api_key {
-                req_builder = req_builder.header("Authorization", format!("Bearer {}", key));
-            }
-
-            let response = req_builder.send().await?;
-
-            // Check for API errors
-            if !response.status().is_success() {
-                let status = response.status().as_u16();
-                let error_text = response
-                    .text()
-                    .await
-                    .unwrap_or_else(|_| "Unknown error".to_string());
-                let suggestion = match status {
-                    401 => "Check your API key is correct and has the right permissions.",
-                    403 => "Your API key may not have access to this resource or may be expired.",
-                    429 => "Rate limit exceeded. Try again later or reduce request frequency.",
-                    500..=599 => "Server error. The API service may be down, try again later.",
-                    _ => "Check the API documentation for this status code.",
-                };
-                return Err(EchomindError::ApiError {
-                    status,
-                    message: error_text,
-                    suggestion: suggestion.to_string(),
-                });
-            }
-
-            let chat_response: ChatResponse = response.json().await?;
-
-            let result = chat_response
-                .choices
-                .first()
-                .and_then(|choice| choice.message.get_text())
-                .map(|s| s.to_string())
-                .ok_or(EchomindError::EmptyResponse)?;
-
-            // Cache the result
-            if request.stream.is_none() || !request.stream.unwrap_or(false) {
-                let cache_key = self.generate_cache_key(&request);
-                if let Ok(mut cache) = self.cache.lock() {
-                    let entry = CacheEntry {
-                        response: result.clone(),
-                        timestamp: Instant::now(),
-                        ttl: Duration::from_secs(300), // 5 minute TTL
-                    };
-                    cache.put(cache_key, entry);
+                // Add authorization header if API key is available
+                if let Some(ref key) = self.api_key {
+                    req_builder = req_builder.header("Authorization", format!("Bearer {}", key));
                 }
-            }
 
-            Ok(result)
-            },
+                let response = req_builder.send().await?;
+
+                // Check for API errors
+                if !response.status().is_success() {
+                    let status = response.status().as_u16();
+                    let error_text = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown error".to_string());
+                    let suggestion = match status {
+                        401 => "Check your API key is correct and has the right permissions.",
+                        403 => {
+                            "Your API key may not have access to this resource or may be expired."
+                        }
+                        429 => "Rate limit exceeded. Try again later or reduce request frequency.",
+                        500..=599 => "Server error. The API service may be down, try again later.",
+                        _ => "Check the API documentation for this status code.",
+                    };
+                    return Err(EchomindError::ApiError {
+                        status,
+                        message: error_text,
+                        suggestion: suggestion.to_string(),
+                    });
+                }
+
+                let chat_response: ChatResponse = response.json().await?;
+
+                let result = chat_response
+                    .choices
+                    .first()
+                    .and_then(|choice| choice.message.get_text())
+                    .map(|s| s.to_string())
+                    .ok_or(EchomindError::EmptyResponse)?;
+
+                // Cache the result
+                if request.stream.is_none() || !request.stream.unwrap_or(false) {
+                    let cache_key = self.generate_cache_key(&request);
+                    if let Ok(mut cache) = self.cache.lock() {
+                        let entry = CacheEntry {
+                            response: result.clone(),
+                            timestamp: Instant::now(),
+                            ttl: Duration::from_secs(300), // 5 minute TTL
+                        };
+                        cache.put(cache_key, entry);
+                    }
+                }
+
+                Ok(result)
+            }
         }
     }
 

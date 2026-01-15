@@ -2,12 +2,12 @@ mod api;
 mod cli;
 mod config;
 mod error;
+mod platform;
 mod repl;
 mod tui;
 
 // // use crate::tui::run_tui;
-use api::{ApiClient, ChatRequest, Message, Provider/*, ContentPart, ImageUrl*/};
-use arboard::Clipboard;
+use api::{ApiClient, ChatRequest, Message, Provider /*, ContentPart, ImageUrl*/};
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use cli::Args;
@@ -15,11 +15,11 @@ use colored::Colorize;
 use config::Config;
 use error::{EchomindError, Result};
 use indicatif::{ProgressBar, ProgressStyle};
-use std::net::TcpStream;
-use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::IsTerminal;
+use std::net::TcpStream;
+use std::time::Duration;
 use tokio::io::{self, AsyncReadExt};
 // use base64::{Engine as _, engine::general_purpose};
 
@@ -46,7 +46,10 @@ async fn run() -> Result<()> {
 
     // Check internet connectivity
     if !check_internet() {
-        eprintln!("{} No internet connection detected. Please check your network and try again.", "Error:".red().bold());
+        eprintln!(
+            "{} No internet connection detected. Please check your network and try again.",
+            "Error:".red().bold()
+        );
         std::process::exit(1);
     }
 
@@ -89,28 +92,69 @@ async fn run() -> Result<()> {
                 initial_messages.extend(p_messages.clone());
             }
         } else {
-            return Err(EchomindError::ConfigError(format!("Preset '{}' not found in config.", preset_name)));
+            return Err(EchomindError::ConfigError(format!(
+                "Preset '{}' not found in config.",
+                preset_name
+            )));
         }
     }
 
     // Check if we're in TUI mode
     if args.tui {
-        use ratatui::{backend::CrosstermBackend, Terminal};
-        use crossterm::{execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode}, event::{DisableMouseCapture, EnableMouseCapture}};
         use crate::tui::App;
+        use crossterm::{
+            event::{DisableMouseCapture, EnableMouseCapture},
+            execute,
+            terminal::{
+                disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+            },
+        };
+        use ratatui::{backend::CrosstermBackend, Terminal};
 
-        enable_raw_mode()?;
+        // Platform-aware terminal initialization
         let mut stdout = std::io::stdout();
-        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+
+        // Enable raw mode
+        if let Err(e) = enable_raw_mode() {
+            eprintln!(
+                "{} Failed to enable raw mode: {}. TUI may not work properly on this platform.",
+                "Warning:".yellow(),
+                e
+            );
+        }
+
+        // Enter alternate screen and enable mouse capture
+        if let Err(e) = execute!(stdout, EnterAlternateScreen, EnableMouseCapture) {
+            eprintln!(
+                "{} Failed to initialize terminal: {}. Falling back to CLI mode.",
+                "Warning:".yellow(),
+                e
+            );
+            disable_raw_mode().ok();
+            // Fall back to interactive mode
+            return run_interactive(args, config, initial_messages, system_prompt).await;
+        }
+
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
         let app = App::new(config, args.clone());
+
+        // Run the TUI app
         let res = crate::tui::run_app(&mut terminal, app).await;
-        disable_raw_mode()?;
-        execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
-        terminal.show_cursor()?;
+
+        // Cleanup - ensure we always restore terminal state
+        disable_raw_mode().ok();
+        if let Err(e) = execute!(
+            terminal.backend_mut(),
+            LeaveAlternateScreen,
+            DisableMouseCapture
+        ) {
+            eprintln!("{} Failed to cleanup terminal: {}", "Warning:".yellow(), e);
+        }
+        terminal.show_cursor().ok();
+
         if let Err(err) = res {
-            eprintln!("TUI error: {:?}", err);
+            eprintln!("{} TUI error: {:?}", "Error:".red().bold(), err);
         }
         return Ok(());
     }
@@ -121,7 +165,14 @@ async fn run() -> Result<()> {
     }
 
     if let Some(batch_file) = &args.batch {
-        return run_batch_queries(batch_file, args.clone(), config, initial_messages, system_prompt).await;
+        return run_batch_queries(
+            batch_file,
+            args.clone(),
+            config,
+            initial_messages,
+            system_prompt,
+        )
+        .await;
     }
 
     // Check for model comparison mode
@@ -196,7 +247,10 @@ async fn run() -> Result<()> {
             if total_read > MAX_INPUT_SIZE {
                 return Err(EchomindError::InputError(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    format!("Input too large. Maximum allowed size is {}MB", MAX_INPUT_SIZE / (1024 * 1024)),
+                    format!(
+                        "Input too large. Maximum allowed size is {}MB",
+                        MAX_INPUT_SIZE / (1024 * 1024)
+                    ),
                 )));
             }
 
@@ -231,7 +285,11 @@ async fn run_batch_queries(
             continue; // Skip empty lines and comments
         }
 
-        println!("{}\n{}", "─".repeat(80).bright_black(), format!("Batch Query {}: {}", i + 1, query).cyan().bold());
+        println!(
+            "{}\n{}",
+            "─".repeat(80).bright_black(),
+            format!("Batch Query {}: {}", i + 1, query).cyan().bold()
+        );
         println!("{}", "─".repeat(80).bright_black());
 
         // Clone args and config for each query to avoid ownership issues
@@ -241,7 +299,8 @@ async fn run_batch_queries(
             query.to_string(),
             initial_messages.clone(),
             system_prompt.clone(),
-        ).await?;
+        )
+        .await?;
 
         println!(); // Add a newline for separation between responses
     }
@@ -249,7 +308,13 @@ async fn run_batch_queries(
     Ok(())
 }
 
-async fn run_single_query(args: Args, config: Config, input: String, messages: Vec<Message>, system_prompt: Option<String>) -> Result<()> {
+async fn run_single_query(
+    args: Args,
+    config: Config,
+    input: String,
+    messages: Vec<Message>,
+    system_prompt: Option<String>,
+) -> Result<()> {
     let start_time = std::time::Instant::now();
     let (coder, output) = args.resolve_coder_and_output();
 
@@ -450,7 +515,8 @@ async fn run_single_query(args: Args, config: Config, input: String, messages: V
 
     // Save to file if specified
     if let Some(outfile) = &output {
-        fs::write(outfile, &formatted_output).map_err(|e| EchomindError::FileError(e.to_string()))?;
+        fs::write(outfile, &formatted_output)
+            .map_err(|e| EchomindError::FileError(e.to_string()))?;
         println!("{} {}", "✅ Saved to".green(), outfile);
     }
 
@@ -502,24 +568,14 @@ fn check_internet() -> bool {
     TcpStream::connect_timeout(&"8.8.8.8:53".parse().unwrap(), Duration::from_secs(5)).is_ok()
 }
 
-// Helper function to read from clipboard
+// Helper function to read from clipboard (platform-aware)
 fn read_from_clipboard() -> Result<String> {
-    let mut clipboard = Clipboard::new()
-        .map_err(|e| EchomindError::Other(format!("Failed to access clipboard: {}", e)))?;
-
-    clipboard
-        .get_text()
-        .map_err(|e| EchomindError::Other(format!("Failed to read from clipboard: {}", e)))
+    platform::clipboard::read_from_clipboard()
 }
 
-// Helper function to write to clipboard
+// Helper function to write to clipboard (platform-aware)
 fn write_to_clipboard(text: &str) -> Result<()> {
-    let mut clipboard = Clipboard::new()
-        .map_err(|e| EchomindError::Other(format!("Failed to access clipboard: {}", e)))?;
-
-    clipboard
-        .set_text(text)
-        .map_err(|e| EchomindError::Other(format!("Failed to write to clipboard: {}", e)))
+    platform::clipboard::copy_to_clipboard(text)
 }
 
 // Load conversation history
@@ -597,13 +653,25 @@ fn format_output(content: &str, format_str: &str, provider: &str, model: &str) -
                 .replace("{timestamp}", &Utc::now().to_rfc3339());
             Ok(formatted)
         }
-        _ => Err(EchomindError::Other(format!("Unknown format: {}", format_str))),
+        _ => Err(EchomindError::Other(format!(
+            "Unknown format: {}",
+            format_str
+        ))),
     }
 }
 
 // Compare responses from multiple models
-async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Config, system_prompt: Option<String>) -> Result<()> {
-    let models: Vec<String> = models_str.split(',').map(|s| s.trim().to_string()).collect();
+async fn compare_models(
+    input: &str,
+    models_str: &str,
+    args: &Args,
+    config: &Config,
+    system_prompt: Option<String>,
+) -> Result<()> {
+    let models: Vec<String> = models_str
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect();
 
     if models.is_empty() {
         return Err(EchomindError::Other(
@@ -632,7 +700,10 @@ async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Con
             } else if model_name.contains('/') {
                 // Assume format like "ollama/llama2"
                 let parts: Vec<&str> = model_name.split('/').collect();
-                (parts[0], parts.get(1).unwrap_or(&model_name.as_str()).to_string())
+                (
+                    parts[0],
+                    parts.get(1).unwrap_or(&model_name.as_str()).to_string(),
+                )
             } else {
                 (
                     args.provider.as_deref().unwrap_or(&config.api.provider),
@@ -706,7 +777,12 @@ async fn compare_models(input: &str, models_str: &str, args: &Args, config: &Con
     Ok(())
 }
 
-pub async fn run_interactive(args: Args, config: Config, initial_messages: Vec<Message>, system_prompt: Option<String>) -> Result<()> {
+pub async fn run_interactive(
+    args: Args,
+    config: Config,
+    initial_messages: Vec<Message>,
+    system_prompt: Option<String>,
+) -> Result<()> {
     let api_key = args.api_key.or(config.api.api_key.clone());
     let timeout = args.timeout.unwrap_or(config.api.timeout);
     let provider = if let Some(p_str) = &args.provider {

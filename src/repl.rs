@@ -80,7 +80,8 @@ impl Repl {
                     let _ = rl.add_history_entry(line);
 
                     // Add user message to conversation
-                    self.conversation.push(Message::text("user".to_string(), line.to_string()));
+                    self.conversation
+                        .push(Message::text("user".to_string(), line.to_string()));
 
                     // Send request
                     let request = ChatRequest {
@@ -114,7 +115,8 @@ impl Repl {
                     }
 
                     // Add assistant response to conversation
-                    self.conversation.push(Message::text("assistant".to_string(), response));
+                    self.conversation
+                        .push(Message::text("assistant".to_string(), response));
 
                     println!(); // Empty line for readability
                 }
