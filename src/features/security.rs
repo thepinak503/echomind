@@ -128,7 +128,7 @@ impl SecurityManager {
         if let Some(ref log_file) = self.audit_log_file {
             let log_entry = serde_json::to_string(&entry)
                 .map_err(|e| EchomindError::Other(format!("Failed to serialize audit entry: {}", e)))?;
-            
+
             fs::write(log_file, format!("{}\n", log_entry))
                 .map_err(|e| EchomindError::Other(format!("Failed to write audit log: {}", e)))?;
         }
@@ -137,23 +137,23 @@ impl SecurityManager {
 
     pub fn redact_pii(&self, text: &str) -> String {
         let mut redacted = text.to_string();
-        
+
         // Redact email addresses
         let email_regex = regex::Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b").unwrap();
         redacted = email_regex.replace_all(&redacted, "[EMAIL_REDACTED]").to_string();
-        
+
         // Redact phone numbers
         let phone_regex = regex::Regex::new(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b").unwrap();
         redacted = phone_regex.replace_all(&redacted, "[PHONE_REDACTED]").to_string();
-        
+
         // Redact credit card numbers
         let cc_regex = regex::Regex::new(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b").unwrap();
         redacted = cc_regex.replace_all(&redacted, "[CC_REDACTED]").to_string();
-        
+
         // Redact social security numbers
         let ssn_regex = regex::Regex::new(r"\b\d{3}-\d{2}-\d{4}\b").unwrap();
         redacted = ssn_regex.replace_all(&redacted, "[SSN_REDACTED]").to_string();
-        
+
         redacted
     }
 
@@ -184,22 +184,22 @@ impl SecurityManager {
         // Simple permission check - in a real implementation, this would be more sophisticated
         let permissions = std::env::var("ECHOMIND_PERMISSIONS").unwrap_or_default();
         let required_permission = format!("{}:{}", resource, action);
-        
+
         Ok(permissions.split(',').any(|p| p.trim() == required_permission))
     }
 
     pub fn sanitize_input(&self, input: &str) -> String {
         let mut sanitized = input.to_string();
-        
+
         // Remove potentially dangerous characters
         sanitized = sanitized.replace('\0', "");
         sanitized = sanitized.replace('\x1b', ""); // Remove ANSI escape sequences
-        
+
         // Limit length to prevent DoS
         if sanitized.len() > 100_000 {
             sanitized.truncate(100_000);
         }
-        
+
         sanitized
     }
 
@@ -208,12 +208,12 @@ impl SecurityManager {
         if api_key.len() < 16 {
             return Ok(false);
         }
-        
+
         // Check for common patterns that indicate weak keys
         if api_key.contains("sk-") && api_key.len() < 20 {
             return Ok(false);
         }
-        
+
         Ok(true)
     }
 
@@ -221,7 +221,7 @@ impl SecurityManager {
         let mut token_bytes = [0u8; 32];
         self.rng.fill(&mut token_bytes)
             .map_err(|e| EchomindError::Other(format!("Failed to generate session token: {}", e)))?;
-        
+
         Ok(hex::encode(token_bytes))
     }
 

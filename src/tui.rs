@@ -5,7 +5,7 @@ use crate::error::Result;
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use ratatui::{
     backend::Backend,
-    layout::{Alignment, Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
@@ -104,6 +104,7 @@ impl App {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn get_chat_text(&self) -> String {
         self.messages
             .iter()
@@ -184,6 +185,7 @@ impl App {
     }
 }
 
+#[allow(dead_code)]
 fn save_chat_history(app: &App) -> Result<()> {
     app.save_messages()
 }
