@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://github.com/thepinak503/echomind"
 license=('MIT')
 depends=('openssl' 'gcc-libs')
-makedepends=('rust' 'cargo' 'git' 'clang')
+makedepends=('rust' 'cargo' 'git')
 optdepends=('jq: for JSON output formatting')
 provides=('echomind')
 conflicts=('echomind-git')
@@ -16,15 +16,11 @@ sha256sums=('SKIP')
 
 build() {
   cd "$srcdir/${pkgname%-git}"
-  export CC=clang
-  export CXX=clang++
-  export RUSTFLAGS="--remap-path-prefix=$(pwd)=. -C linker=clang"
-  cargo clean
   cargo build --release
 }
 
 package() {
-  cd "$srcdir/$pkgname-$pkgver"
+  cd "$srcdir/${pkgname%-git}-${pkgver}"
   install -Dm755 target/release/echomind "$pkgdir/usr/bin/echomind"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 CONTRIBUTING.md "$pkgdir/usr/share/doc/$pkgname/CONTRIBUTING.md"
