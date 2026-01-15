@@ -12,22 +12,21 @@ Examples:
   cat file.txt | echomind
   echo 'write a Python function' | echomind --coder --output code.py
   echomind --interactive
+  echomind --tui
   echomind --init-config
   echo 'explain quantum computing' | echomind --provider openai --model gpt-4
 
 Features:
   • Multiple AI providers (OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, ChatAnywhere, ch.at)
   • Interactive REPL mode with conversation history
+  • Rich TUI mode (--tui) with streaming responses
   • Streaming responses in real-time
-  • Multimodal support (images, PDFs, documents)
-  • Voice input/output capabilities
-  • Batch processing from files
-  • Model comparison and benchmarking
   • Clipboard integration
   • Custom output formatting (JSON, templates)
-  • Conversation presets and templates
+  • Conversation presets and history
+  • Batch processing and model comparison
   • Cross-platform: Linux, macOS, Windows, WSL
-  • Performance optimized with async I/O and caching"
+  • Performance optimized with async I/O"
 )]
 pub struct Args {
     /// Enable coder mode (generates clean code without explanations)
