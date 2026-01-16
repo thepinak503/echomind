@@ -1,5 +1,8 @@
 # echomind
 
+![Echomind Animation](https://raw.githubusercontent.com/thepinak503/echomind/master/Echomind.gif)
+
+
 A powerful, lightweight CLI tool in Rust for AI chat APIs. Pipe input, get responses, with streaming, interactive mode, and more.
 
 **Version:** 0.3.2
