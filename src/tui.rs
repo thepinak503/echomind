@@ -2,21 +2,19 @@ use crate::api::{ApiClient, ChatRequest, Message, Provider};
 use crate::cli::Args;
 use crate::config::Config;
 use crate::error::Result;
-use crate::platform::system;
 use chrono::{DateTime, Local};
 use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use ratatui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, Paragraph},
     Frame, Terminal,
 };
 use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use std::fs;
 use std::io;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -141,7 +139,7 @@ impl TuiApp {
     }
 }
 
-fn encrypt(data: &[u8]) -> Result<Vec<u8>> {
+fn _encrypt(data: &[u8]) -> Result<Vec<u8>> {
     let key = UnboundKey::new(&AES_256_GCM, b"echomind_tui_key_32bytes!!")
         .map_err(|_| crate::error::EchomindError::ConfigError("Invalid key".into()))?;
     let key = LessSafeKey::new(key);
@@ -152,7 +150,7 @@ fn encrypt(data: &[u8]) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-fn decrypt(data: &[u8]) -> Result<Vec<u8>> {
+fn _decrypt(data: &[u8]) -> Result<Vec<u8>> {
     let key = UnboundKey::new(&AES_256_GCM, b"echomind_tui_key_32bytes!!")
         .map_err(|_| crate::error::EchomindError::ConfigError("Invalid key".into()))?;
     let key = LessSafeKey::new(key);
@@ -490,7 +488,7 @@ fn draw_input(f: &mut Frame, app: &TuiApp, area: Rect) {
     }
 }
 
-fn draw_footer(f: &mut Frame, app: &TuiApp, area: Rect) {
+fn draw_footer(f: &mut Frame, _app: &TuiApp, area: Rect) {
     let footer = Paragraph::new(vec![Line::from(vec![
         Span::styled("Ctrl+C/Q Exit  ", Style::default().fg(Color::DarkGray)),
         Span::styled("Ctrl+T Temp  ", Style::default().fg(Color::DarkGray)),
