@@ -1,0 +1,364 @@
+name: Cross-Compile
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -C opt-level=3 -C lto=fat -C codegen-units=1 -C embed-bitcode=yes
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux:
+    name: Build Linux ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+        include:
+          - target: x86_64-unknown-linux-gnu
+            arch: amd64
+          - target: aarch64-unknown-linux-gnu
+            arch: arm64
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libssl-dev libasound2-dev alsa-utils
+
+    - name: Install cross-compilation tools
+      if: matrix.target == 'aarch64-unknown-linux-gnu'
+      run: |
+        sudo dpkg --add-architecture arm64
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross libasound2-dev:arm64
+
+    - name: Set cross-compilation environment
+      if: matrix.target == 'aarch64-unknown-linux-gnu'
+      run: |
+        echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+        echo "CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++" >> $GITHUB_ENV
+        echo "AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar" >> $GITHUB_ENV
+        echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache target directory
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build with all features
+      run: |
+        cargo build --release --target ${{ matrix.target }} --features all-features,ssl-vendored
+
+    - name: Strip binary
+      run: |
+        if [[ "${{ matrix.target }}" == *"aarch64"* ]]; then
+          aarch64-linux-gnu-strip target/${{ matrix.target }}/release/echomind || true
+        else
+          strip target/${{ matrix.target }}/release/echomind
+        fi
+
+    - name: Package
+      run: |
+        cd target/${{ matrix.target }}/release
+        tar czf ../../../echomind-linux-${{ matrix.arch }}.tar.gz echomind
+        cd ../../..
+
+    - name: Generate checksums
+      run: |
+        shasum -a 256 echomind-linux-${{ matrix.arch }}.tar.gz > echomind-linux-${{ matrix.arch }}.tar.gz.sha256
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: echomind-linux-${{ matrix.arch }}
+        path: |
+          echomind-linux-${{ matrix.arch }}.tar.gz
+          echomind-linux-${{ matrix.arch }}.tar.gz.sha256
+
+  build-windows-gnu:
+    name: Build Windows GNU ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-pc-windows-gnu
+        include:
+          - target: x86_64-pc-windows-gnu
+            arch: amd64-gnu
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Install MinGW
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64
+
+    - name: Set cross-compilation environment
+      run: |
+        echo "CC_x86_64_pc_windows_gnu=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
+        echo "CXX_x86_64_pc_windows_gnu=x86_64-w64-mingw32-g++" >> $GITHUB_ENV
+        echo "AR_x86_64_pc_windows_gnu=x86_64-w64-mingw32-ar" >> $GITHUB_ENV
+        echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build with all features
+      run: |
+        cargo build --release --target ${{ matrix.target }} --features all-features,ssl-vendored
+
+    - name: Package
+      run: |
+        cd target/${{ matrix.target }}/release
+        zip ../../../echomind-windows-${{ matrix.arch }}.zip echomind.exe
+        cd ../../..
+
+    - name: Generate checksums
+      run: |
+        shasum -a 256 echomind-windows-${{ matrix.arch }}.zip > echomind-windows-${{ matrix.arch }}.zip.sha256
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: echomind-windows-${{ matrix.arch }}
+        path: |
+          echomind-windows-${{ matrix.arch }}.zip
+          echomind-windows-${{ matrix.arch }}.zip.sha256
+
+  build-macos:
+    name: Build macOS ${{ matrix.target }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Install OpenSSL
+      run: brew install openssl@3
+
+    - name: Set OpenSSL environment for x86_64
+      if: matrix.target == 'x86_64-apple-darwin'
+      run: echo "No OpenSSL setup needed"
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache target directory
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build with all features
+      run: |
+        cargo build --release --target ${{ matrix.target }} --features all-features,ssl-vendored
+
+    - name: Strip binary
+      run: strip target/${{ matrix.target }}/release/echomind
+
+    - name: Package
+      run: |
+        cd target/${{ matrix.target }}/release
+        if [ "${{ matrix.target }}" = "aarch64-apple-darwin" ]; then
+          tar czf ../../../echomind-macos-arm64.tar.gz echomind
+        else
+          tar czf ../../../echomind-macos-amd64.tar.gz echomind
+        fi
+        cd ../../..
+
+    - name: Generate checksums
+      run: |
+        if [ "${{ matrix.target }}" = "aarch64-apple-darwin" ]; then
+          shasum -a 256 echomind-macos-arm64.tar.gz > echomind-macos-arm64.tar.gz.sha256
+        else
+          shasum -a 256 echomind-macos-amd64.tar.gz > echomind-macos-amd64.tar.gz.sha256
+        fi
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: echomind-macos-${{ matrix.target == 'aarch64-apple-darwin' && 'arm64' || 'amd64' }}
+        path: |
+          echomind-macos-*.tar.gz
+          echomind-macos-*.tar.gz.sha256
+
+  build-windows-msvc:
+    name: Build Windows MSVC
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo index
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache target directory
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build with all features
+      run: cargo build --release --features all-features,ssl-vendored
+
+    - name: Package
+      run: |
+        cd target\release
+        Compress-Archive -Path echomind.exe -DestinationPath ..\..\echomind-windows-amd64-msvc.zip
+        cd ..\..
+
+    - name: Generate checksums
+      run: |
+        cd target\release
+        $hash = (Get-FileHash echomind.exe -Algorithm SHA256).Hash.ToLower()
+        $hash | Out-File -FilePath ..\..\echomind-windows-amd64-msvc.zip.sha256
+        cd ..\..
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: echomind-windows-amd64-msvc
+        path: |
+          echomind-windows-amd64-msvc.zip
+          echomind-windows-amd64-msvc.zip.sha256
+
+  test-artifacts:
+    name: Test Build Artifacts
+    needs: [build-linux, build-windows-gnu, build-macos, build-windows-msvc]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: List downloaded artifacts
+      run: |
+        echo "Downloaded artifacts:"
+        find artifacts -type f -exec ls -lh {} \;
+
+    - name: Verify tar.gz files
+      run: |
+        find artifacts -name "*.tar.gz" -exec tar -tzf {} \; | head -5
+
+    - name: Verify zip files
+      run: |
+        find artifacts -name "*.zip" -exec unzip -l {} \; | head -5
+
+  release:
+    name: Create Release
+    needs: [build-linux, build-windows-gnu, build-macos, build-windows-msvc]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Flatten artifacts
+      run: |
+        find artifacts -type f -exec cp {} . \;
+        find artifacts -type d -delete
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          echomind-*.tar.gz
+          echomind-*.tar.gz.sha256
+          echomind-*.zip
+          echomind-*.zip.sha256
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,45 @@
+#!/usr/bin/make -f
+
+# Debian package build rules for echomind
+
+DESTDIR ?= $(CURDIR)/debian/echomind
+CARGO = cargo
+CARGO_FLAGS = --release
+TARGET = $(shell rustc -vV | grep 'host:' | sed 's/.* //' | sed 's/-unknown-$$/-unknown-linux-gnu/')
+
+.PHONY: build clean install binary
+
+all: build
+
+binary:
+	$(CARGO) build $(CARGO_FLAGS) --target $(TARGET)
+	strip target/$(TARGET)/release/echomind
+
+build:
+	dh_auto_build --buildsystem=cargo
+
+clean:
+	dh_auto_clean
+	cargo clean
+
+install: build
+	dh_auto_install --buildsystem=cargo
+	install -Dm755 target/$(TARGET)/release/echomind $(DESTDIR)/usr/bin/echomind
+	install -Dm644 README.md $(DESTDIR)/usr/share/doc/echomind/README.md
+	install -Dm644 docs/config.example.toml $(DESTDIR)/usr/share/doc/echomind/config.example.toml
+	install -Dm644 docs/CHANGELOG.md $(DESTDIR)/usr/share/doc/echomind/CHANGELOG.md
+	install -Dm644 docs/RELEASE_NOTES.md $(DESTDIR)/usr/share/doc/echomind/RELEASE_NOTES.md
+	install -Dm644 docs/LICENSE $(DESTDIR)/usr/share/doc/echomind/LICENSE
+	install -Dm644 echomind.1 $(DESTDIR)/usr/share/man/man1/echomind.1
+	install -Dm644 docs/completions/echomind.bash $(DESTDIR)/usr/share/bash-completion/completions/echomind
+	install -Dm644 docs/completions/_echomind $(DESTDIR)/usr/share/zsh/vendor-completions/_echomind
+	install -Dm644 docs/completions/echomind.fish $(DESTDIR)/usr/share/fish/vendor_completions.d/echomind.fish
+
+override_dh_auto_build:
+	$(CARGO) build $(CARGO_FLAGS) --target $(TARGET)
+
+override_dh_auto_clean:
+	cargo clean
+
+override_dh_auto_install:
+	install -Dm755 target/$(TARGET)/release/echomind $(DESTDIR)/usr/bin/echomind

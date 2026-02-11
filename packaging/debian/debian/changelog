@@ -1,0 +1,8 @@
+echomind (0.3.2-1) unstable; urgency=medium
+
+  * Initial Debian packaging
+  * Support for amd64 and arm64 architectures
+  * Includes all features (voice, images, PDF)
+  * Shell completions for bash, zsh, fish
+
+ -- Pinak Dhabu <pinak@echomind.dev>  Wed, 07 Feb 2026 12:00:00 +0000
