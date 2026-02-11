@@ -7,7 +7,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -C opt-level=3 -C lto=fat -C codegen-units=1 -C embed-bitcode=yes
+  # Note: LTO is configured in Cargo.toml as "thin" to avoid proc-macro issues
+  # We only set optimization flags here, not LTO
+  RUSTFLAGS: -C opt-level=3 -C codegen-units=1 -C embed-bitcode=yes
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux
+          # Linux GNU
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: echomind
@@ -32,11 +34,22 @@ jobs:
             artifact_name: echomind
             asset_name: echomind-linux-arm64
             name: Linux ARM64 GNU
-          # Windows
+          # Linux MUSL
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact_name: echomind
+            asset_name: echomind-linux-amd64-musl
+            name: Linux x86_64 MUSL
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            artifact_name: echomind
+            asset_name: echomind-linux-arm64-musl
+            name: Linux ARM64 MUSL
+          # Windows MSVC
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: echomind.exe
-            asset_name: echomind-windows-amd64.exe
+            asset_name: echomind-windows-amd64
             name: Windows x86_64 MSVC
           # macOS
           - os: macos-latest
@@ -58,31 +71,50 @@ jobs:
       with:
         targets: ${{ matrix.target }}
 
+    # Linux dependencies
     - name: Install system dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
+      if: startsWith(matrix.os, 'ubuntu')
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libssl-dev libasound2-dev alsa-utils
+        sudo apt-get install -y build-essential pkg-config
 
-    - name: Install cross-compilation tools (Linux ARM64)
+    # Linux GNU ARM64 cross-compilation
+    - name: Install cross-compilation tools (Linux ARM64 GNU)
       if: matrix.target == 'aarch64-unknown-linux-gnu'
       run: |
         sudo dpkg --add-architecture arm64
         sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross libasound2-dev:arm64
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
 
-    - name: Set cross-compilation environment (Linux ARM64)
+    - name: Set cross-compilation environment (Linux ARM64 GNU)
       if: matrix.target == 'aarch64-unknown-linux-gnu'
       run: |
         echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
         echo "CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++" >> $GITHUB_ENV
         echo "AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar" >> $GITHUB_ENV
-        echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-        echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+        echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
-    - name: No OpenSSL needed
-      run: echo "Skipping OpenSSL setup"
+    # Linux MUSL
+    - name: Install MUSL tools (Linux MUSL)
+      if: contains(matrix.target, 'musl')
+      run: |
+        sudo apt-get install -y musl-tools
 
+    - name: Install MUSL cross-compilation tools (Linux ARM64 MUSL)
+      if: matrix.target == 'aarch64-unknown-linux-musl'
+      run: |
+        sudo apt-get install -y gcc-aarch64-linux-gnu
+        echo "CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+        echo "CXX_aarch64_unknown_linux_musl=aarch64-linux-gnu-g++" >> $GITHUB_ENV
+        echo "AR_aarch64_unknown_linux_musl=aarch64-linux-gnu-ar" >> $GITHUB_ENV
+        echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+
+    # Windows MSVC dependencies
+    - name: Setup Windows MSVC
+      if: matrix.os == 'windows-latest'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    # Cache cargo
     - name: Cache cargo registry
       uses: actions/cache@v4
       with:
@@ -101,24 +133,28 @@ jobs:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Build with all features (Linux/macOS)
+    # Build
+    - name: Build release binary (Linux/macOS)
       if: matrix.os != 'windows-latest'
       run: |
-        cargo build --release --target ${{ matrix.target }} --features all-features,ssl-vendored
+        cargo build --release --target ${{ matrix.target }}
 
-    - name: Build with all features (Windows)
+    - name: Build release binary (Windows)
       if: matrix.os == 'windows-latest'
-      run: cargo build --release --features all-features,ssl-vendored
+      run: |
+        cargo build --release --target ${{ matrix.target }}
 
+    # Strip binaries
     - name: Strip binary (Linux/macOS)
       if: matrix.os != 'windows-latest'
       run: |
-        if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+        if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ] || [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
           aarch64-linux-gnu-strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
         else
           strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
         fi
 
+    # Package
     - name: Generate checksums (Linux/macOS)
       if: matrix.os != 'windows-latest'
       run: |
@@ -129,10 +165,10 @@ jobs:
     - name: Generate checksums (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        cd target\release
+        cd target\${{ matrix.target }}\release
         $hash = (Get-FileHash ${{ matrix.artifact_name }} -Algorithm SHA256).Hash.ToLower()
-        $hash | Out-File -FilePath checksums.txt
-        cd ..\..
+        "$hash  ${{ matrix.artifact_name }}" | Out-File -FilePath checksums.txt
+        cd ..\..\..
 
     - name: Create archive (Linux/macOS)
       if: matrix.os != 'windows-latest'
@@ -144,9 +180,9 @@ jobs:
     - name: Create archive (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        cd target\release
-        Compress-Archive -Path ${{ matrix.artifact_name }},checksums.txt -DestinationPath ..\..\${{ matrix.asset_name }}.zip
-        cd ..\..
+        cd target\${{ matrix.target }}\release
+        Compress-Archive -Path ${{ matrix.artifact_name }},checksums.txt -DestinationPath ..\..\..\${{ matrix.asset_name }}.zip
+        cd ..\..\..
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -155,6 +191,7 @@ jobs:
         path: |
           ${{ matrix.asset_name }}.tar.gz
           ${{ matrix.asset_name }}.zip
+        if-no-files-found: ignore
 
     - name: Upload to release
       uses: softprops/action-gh-release@v2
@@ -194,46 +231,48 @@ jobs:
         |----------|--------------|----------|
         | Linux x86_64 (GNU) | amd64 | [echomind-linux-amd64.tar.gz](echomind-linux-amd64.tar.gz) |
         | Linux ARM64 (GNU) | arm64 | [echomind-linux-arm64.tar.gz](echomind-linux-arm64.tar.gz) |
-        | Windows | x86_64 | [echomind-windows-amd64.exe.zip](echomind-windows-amd64.exe.zip) |
+        | Linux x86_64 (MUSL) | amd64 | [echomind-linux-amd64-musl.tar.gz](echomind-linux-amd64-musl.tar.gz) |
+        | Linux ARM64 (MUSL) | arm64 | [echomind-linux-arm64-musl.tar.gz](echomind-linux-arm64-musl.tar.gz) |
+        | Windows | x86_64 | [echomind-windows-amd64.zip](echomind-windows-amd64.zip) |
         | macOS | x86_64 | [echomind-macos-amd64.tar.gz](echomind-macos-amd64.tar.gz) |
         | macOS (Apple Silicon) | arm64 | [echomind-macos-arm64.tar.gz](echomind-macos-arm64.tar.gz) |
 
         ### Installation
 
         #### Linux
-        \`\`\`bash
-        # Download and extract
+        ```bash
+        # Download and extract (GNU version)
         wget https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-linux-amd64.tar.gz
         tar xzf echomind-linux-amd64.tar.gz
         sudo mv echomind /usr/local/bin/
-        \`\`\`
+        ```
 
         #### macOS
-        \`\`\`bash
+        ```bash
         # Download and extract
         curl -L https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-macos-arm64.tar.gz -o echomind-macos-arm64.tar.gz
         tar xzf echomind-macos-arm64.tar.gz
         sudo mv echomind /usr/local/bin/
-        \`\`\`
+        ```
 
         #### Windows
-        \`\`\`powershell
+        ```powershell
         # Download and extract
-        Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-windows-amd64.exe.zip" -OutFile "echomind-windows-amd64.exe.zip"
-        Expand-Archive -Path echomind-windows-amd64.exe.zip -DestinationPath .
+        Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-windows-amd64.zip" -OutFile "echomind-windows-amd64.zip"
+        Expand-Archive -Path echomind-windows-amd64.zip -DestinationPath .
         # Add to PATH or move to desired location
-        \`\`\`
+        ```
 
         ### Verification
 
         Each release includes SHA256 checksums for verification:
-        \`\`\`bash
+        ```bash
         # Linux/macOS
         shasum -a 256 echomind
 
         # Windows
         certutil -hashfile echomind.exe SHA256
-        \`\`\`
+        ```
 
         ---
 
