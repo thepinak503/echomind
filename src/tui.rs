@@ -3,13 +3,13 @@ use crate::cli::Args;
 use crate::config::Config;
 use crate::error::Result;
 use chrono::{DateTime, Local};
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode, KeyModifiers, MouseEvent, MouseEventKind};
 use ratatui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
     Frame, Terminal,
 };
 use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
@@ -21,6 +21,8 @@ use textwrap::Options;
 use tokio::sync::mpsc;
 
 const MAX_INPUT_LENGTH: usize = 4096;
+const SCROLL_LINES: usize = 3;
+const PAGE_SCROLL_LINES: usize = 10;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum TuiState {
@@ -49,7 +51,6 @@ pub struct TuiApp {
     config: Config,
     args: Args,
     last_duration: Option<Duration>,
-    scroll_offset: usize,
 }
 
 impl TuiApp {
@@ -82,7 +83,6 @@ impl TuiApp {
             config,
             args,
             last_duration: None,
-            scroll_offset: 0,
         }
     }
 
@@ -95,7 +95,6 @@ impl TuiApp {
         if self.messages.len() > 100 {
             self.messages.pop_front();
         }
-        self.scroll_offset = 0;
     }
 
     fn handle_command(&mut self) -> bool {
@@ -124,6 +123,7 @@ Ctrl+L         - Clear screen
 Enter          - Send message
 Up/Down        - Navigate history
 Page Up/Down   - Scroll messages
+Mouse Wheel    - Scroll messages
 Esc            - Exit"#;
                 self.add_message("System".to_string(), help_text.to_string());
             }
@@ -131,7 +131,6 @@ Esc            - Exit"#;
                 self.messages.clear();
                 self.input.clear();
                 self.state = TuiState::Idle;
-                self.scroll_offset = 0;
             }
             "/model" if parts.len() > 1 => {
                 self.model = parts[1..].join(" ");
@@ -164,14 +163,6 @@ Esc            - Exit"#;
         self.input.clear();
         true
     }
-
-    fn scroll_up(&mut self, lines: usize) {
-        self.scroll_offset = self.scroll_offset.saturating_add(lines);
-    }
-
-    fn scroll_down(&mut self, lines: usize) {
-        self.scroll_offset = self.scroll_offset.saturating_sub(lines);
-    }
 }
 
 fn _encrypt(data: &[u8]) -> Result<Vec<u8>> {
@@ -200,121 +191,164 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
     let (tx, mut rx) = mpsc::unbounded_channel::<String>();
     let mut response_content = String::new();
     let mut processing_start: Option<Instant> = None;
+    let mut total_lines = 0;
+    let mut vertical_scroll = 0usize;
 
     loop {
-        terminal.draw(|f| draw(f, &app))?;
+        terminal.draw(|f| {
+            let size = f.size();
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(2),
+                    Constraint::Min(1),
+                    Constraint::Length(3),
+                    Constraint::Length(2),
+                ])
+                .split(size);
+
+            draw_header(f, &app, chunks[0]);
+            let (lines, scroll) = draw_messages(f, &app, chunks[1], vertical_scroll);
+            total_lines = lines;
+            draw_input(f, &app, chunks[2]);
+            draw_footer(f, &app, chunks[3]);
+        })?;
 
         if event::poll(Duration::from_millis(50))? {
-            if let Event::Key(key) = event::read()? {
-                if key.modifiers.contains(KeyModifiers::CONTROL) {
-                    match key.code {
-                        KeyCode::Char('c') | KeyCode::Char('q') => break,
-                        KeyCode::Char('t') => {
-                            app.temperature = match app.temperature {
-                                t if t < 0.2 => 0.5,
-                                t if t < 0.7 => 1.0,
-                                t if t < 1.5 => 1.8,
-                                _ => 0.1,
-                            };
+            match event::read()? {
+                Event::Key(key) => {
+                    if key.modifiers.contains(KeyModifiers::CONTROL) {
+                        match key.code {
+                            KeyCode::Char('c') | KeyCode::Char('q') => break,
+                            KeyCode::Char('t') => {
+                                app.temperature = match app.temperature {
+                                    t if t < 0.2 => 0.5,
+                                    t if t < 0.7 => 1.0,
+                                    t if t < 1.5 => 1.8,
+                                    _ => 0.1,
+                                };
+                            }
+                            KeyCode::Char('s') => app.stream = !app.stream,
+                            KeyCode::Char('l') => {
+                                app.messages.clear();
+                                app.state = TuiState::Idle;
+                                vertical_scroll = 0;
+                            }
+                            _ => {}
                         }
-                        KeyCode::Char('s') => app.stream = !app.stream,
-                        KeyCode::Char('l') => {
-                            app.messages.clear();
-                            app.state = TuiState::Idle;
-                            app.scroll_offset = 0;
+                    } else {
+                        match key.code {
+                            KeyCode::Enter => {
+                                if app.state == TuiState::Processing {
+                                    continue;
+                                }
+                                if !app.input.is_empty() {
+                                    if app.handle_command() {
+                                        break;
+                                    }
+                                    let input = app.input.clone();
+                                    app.add_message("You".to_string(), input.clone());
+                                    app.history.push(input.clone());
+                                    app.history_index = None;
+                                    app.input.clear();
+                                    app.state = TuiState::Processing;
+                                    processing_start = Some(Instant::now());
+                                    app.add_message(app.provider.name().to_string(), String::new());
+                                    response_content.clear();
+
+                                    let tx_clone = tx.clone();
+                                    let provider = app.provider.clone();
+                                    let model = app.model.clone();
+                                    let temperature = app.temperature;
+                                    let stream = app.stream;
+                                    let config = app.config.clone();
+                                    let args = app.args.clone();
+
+                                    tokio::spawn(send_message(
+                                        input,
+                                        provider,
+                                        model,
+                                        temperature,
+                                        stream,
+                                        config,
+                                        args,
+                                        tx_clone,
+                                    ));
+                                }
+                            }
+                            KeyCode::Char(c) => {
+                                if app.state != TuiState::Processing
+                                    && app.input.len() < MAX_INPUT_LENGTH
+                                {
+                                    app.input.push(c);
+                                    app.history_index = None;
+                                }
+                            }
+                            KeyCode::Backspace => {
+                                if app.state != TuiState::Processing {
+                                    app.input.pop();
+                                    app.history_index = None;
+                                }
+                            }
+                            KeyCode::Up => {
+                                if app.state != TuiState::Processing {
+                                    if let Some(idx) = app.history_index {
+                                        if idx > 0 {
+                                            app.history_index = Some(idx - 1);
+                                            app.input = app.history[idx - 1].clone();
+                                        }
+                                    } else if !app.history.is_empty() {
+                                        app.history_index = Some(app.history.len() - 1);
+                                        app.input = app.history.last().unwrap().clone();
+                                    }
+                                }
+                            }
+                            KeyCode::Down => {
+                                if app.state != TuiState::Processing {
+                                    if let Some(idx) = app.history_index {
+                                        if idx + 1 < app.history.len() {
+                                            app.history_index = Some(idx + 1);
+                                            app.input = app.history[idx + 1].clone();
+                                        } else {
+                                            app.history_index = None;
+                                            app.input.clear();
+                                        }
+                                    }
+                                }
+                            }
+                            KeyCode::PageUp => {
+                                let visible = 20usize;
+                                let max_scroll = total_lines.saturating_sub(visible);
+                                vertical_scroll = vertical_scroll.saturating_add(PAGE_SCROLL_LINES).min(max_scroll);
+                            }
+                            KeyCode::PageDown => {
+                                vertical_scroll = vertical_scroll.saturating_sub(PAGE_SCROLL_LINES);
+                            }
+                            KeyCode::Home => {
+                                vertical_scroll = total_lines;
+                            }
+                            KeyCode::End => {
+                                vertical_scroll = 0;
+                            }
+                            KeyCode::Esc => break,
+                            _ => {}
                         }
-                        _ => {}
                     }
-                } else {
-                    match key.code {
-                        KeyCode::Enter => {
-                            if app.state == TuiState::Processing {
-                                continue;
-                            }
-                            if !app.input.is_empty() {
-                                if app.handle_command() {
-                                    break;
-                                }
-                                let input = app.input.clone();
-                                app.add_message("You".to_string(), input.clone());
-                                app.history.push(input.clone());
-                                app.history_index = None;
-                                app.input.clear();
-                                app.state = TuiState::Processing;
-                                processing_start = Some(Instant::now());
-                                app.add_message(app.provider.name().to_string(), String::new());
-                                response_content.clear();
-
-                                let tx_clone = tx.clone();
-                                let provider = app.provider.clone();
-                                let model = app.model.clone();
-                                let temperature = app.temperature;
-                                let stream = app.stream;
-                                let config = app.config.clone();
-                                let args = app.args.clone();
-
-                                tokio::spawn(send_message(
-                                    input,
-                                    provider,
-                                    model,
-                                    temperature,
-                                    stream,
-                                    config,
-                                    args,
-                                    tx_clone,
-                                ));
-                            }
+                }
+                Event::Mouse(MouseEvent { kind, .. }) => {
+                    match kind {
+                        MouseEventKind::ScrollUp => {
+                            let visible = 20usize;
+                            let max_scroll = total_lines.saturating_sub(visible);
+                            vertical_scroll = vertical_scroll.saturating_add(SCROLL_LINES).min(max_scroll);
                         }
-                        KeyCode::Char(c) => {
-                            if app.state != TuiState::Processing
-                                && app.input.len() < MAX_INPUT_LENGTH
-                            {
-                                app.input.push(c);
-                                app.history_index = None;
-                            }
+                        MouseEventKind::ScrollDown => {
+                            vertical_scroll = vertical_scroll.saturating_sub(SCROLL_LINES);
                         }
-                        KeyCode::Backspace => {
-                            if app.state != TuiState::Processing {
-                                app.input.pop();
-                                app.history_index = None;
-                            }
-                        }
-                        KeyCode::Up => {
-                            if app.state != TuiState::Processing {
-                                if let Some(idx) = app.history_index {
-                                    if idx > 0 {
-                                        app.history_index = Some(idx - 1);
-                                        app.input = app.history[idx - 1].clone();
-                                    }
-                                } else if !app.history.is_empty() {
-                                    app.history_index = Some(app.history.len() - 1);
-                                    app.input = app.history.last().unwrap().clone();
-                                }
-                            }
-                        }
-                        KeyCode::Down => {
-                            if app.state != TuiState::Processing {
-                                if let Some(idx) = app.history_index {
-                                    if idx + 1 < app.history.len() {
-                                        app.history_index = Some(idx + 1);
-                                        app.input = app.history[idx + 1].clone();
-                                    } else {
-                                        app.history_index = None;
-                                        app.input.clear();
-                                    }
-                                }
-                            }
-                        }
-                        KeyCode::PageUp => {
-                            app.scroll_up(5);
-                        }
-                        KeyCode::PageDown => {
-                            app.scroll_down(5);
-                        }
-                        KeyCode::Esc => break,
                         _ => {}
                     }
                 }
+                _ => {}
             }
         }
 
@@ -397,24 +431,6 @@ async fn send_message(
     let _ = tx.send(String::new());
 }
 
-fn draw(f: &mut Frame, app: &TuiApp) {
-    let size = f.size();
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(2),
-            Constraint::Min(1),
-            Constraint::Length(3),
-            Constraint::Length(2),
-        ])
-        .split(size);
-
-    draw_header(f, app, chunks[0]);
-    draw_messages(f, app, chunks[1]);
-    draw_input(f, app, chunks[2]);
-    draw_footer(f, app, chunks[3]);
-}
-
 fn draw_header(f: &mut Frame, app: &TuiApp, area: Rect) {
     let header = Block::default()
         .borders(Borders::BOTTOM)
@@ -475,13 +491,9 @@ fn wrap_text(text: &str, width: usize) -> Vec<String> {
     wrapped_lines
 }
 
-fn draw_messages(f: &mut Frame, app: &TuiApp, area: Rect) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Rgb(60, 60, 60)))
-        .style(Style::default().bg(Color::Rgb(10, 10, 10)));
-
-    let content_width = area.width.saturating_sub(4) as usize;
+fn draw_messages(f: &mut Frame, app: &TuiApp, area: Rect, vertical_scroll: usize) -> (usize, usize) {
+    let content_width = area.width.saturating_sub(6) as usize;
+    let visible_height = area.height.saturating_sub(2) as usize;
     
     let mut all_lines: Vec<(String, Color, Color)> = Vec::new();
     
@@ -510,14 +522,29 @@ fn draw_messages(f: &mut Frame, app: &TuiApp, area: Rect) {
     }
 
     let total_lines = all_lines.len();
-    let visible_height = area.height.saturating_sub(2) as usize;
     
-    let scroll_offset = app.scroll_offset.min(total_lines.saturating_sub(visible_height));
+    let max_scroll = total_lines.saturating_sub(visible_height);
+    let vertical_scroll = vertical_scroll.min(max_scroll);
+    
+    let scroll_from_bottom = max_scroll.saturating_sub(vertical_scroll);
+    
     let visible_lines: Vec<_> = all_lines
         .iter()
-        .skip(scroll_offset)
+        .skip(scroll_from_bottom)
         .take(visible_height)
         .collect();
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Rgb(60, 60, 60)))
+        .style(Style::default().bg(Color::Rgb(10, 10, 10)));
+
+    let title = if total_lines > visible_height {
+        let current_pos = visible_height + scroll_from_bottom;
+        format!(" Messages [{}/{}] ", current_pos.min(total_lines), total_lines)
+    } else {
+        " Messages ".to_string()
+    };
 
     let items: Vec<ListItem> = visible_lines
         .iter()
@@ -527,16 +554,33 @@ fn draw_messages(f: &mut Frame, app: &TuiApp, area: Rect) {
         })
         .collect();
 
-    let title = if total_lines > visible_height {
-        format!(" Messages [{}/{}] ", total_lines.saturating_sub(scroll_offset), total_lines)
-    } else {
-        " Messages ".to_string()
-    };
-
     let list = List::new(items)
         .block(block.title(title))
         .style(Style::default().fg(Color::White));
     f.render_widget(list, area);
+
+    if total_lines > visible_height && visible_height > 0 {
+        let scrollbar_area = Rect::new(
+            area.x + area.width - 1,
+            area.y + 1,
+            1,
+            area.height.saturating_sub(2),
+        );
+        
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("▲"))
+            .end_symbol(Some("▼"))
+            .track_symbol(Some("│"))
+            .thumb_symbol("█");
+        
+        let mut scrollbar_state = ScrollbarState::new(total_lines)
+            .position(scroll_from_bottom)
+            .viewport_content_length(visible_height);
+        
+        f.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
+    }
+
+    (total_lines, vertical_scroll)
 }
 
 fn draw_input(f: &mut Frame, app: &TuiApp, area: Rect) {
@@ -576,7 +620,7 @@ fn draw_input(f: &mut Frame, app: &TuiApp, area: Rect) {
             Style::default().fg(Color::White),
         )),
         Line::from(Span::styled(
-            "Enter: send | Up/Down: history | PgUp/PgDn: scroll | /help",
+            "Enter: send | Up/Down: history | PgUp/PgDn | Mouse: scroll | /help",
             Style::default().fg(Color::DarkGray),
         )),
     ];
@@ -595,7 +639,7 @@ fn draw_footer(f: &mut Frame, _app: &TuiApp, area: Rect) {
         Span::styled("Ctrl+C/Q Exit  ", Style::default().fg(Color::DarkGray)),
         Span::styled("Ctrl+T Temp  ", Style::default().fg(Color::DarkGray)),
         Span::styled("Ctrl+S Stream  ", Style::default().fg(Color::DarkGray)),
-        Span::styled("PgUp/PgDn Scroll", Style::default().fg(Color::Yellow)),
+        Span::styled("Mouse Wheel: Scroll", Style::default().fg(Color::Yellow)),
     ])])
     .style(Style::default().bg(Color::Rgb(17, 17, 17)))
     .alignment(Alignment::Center);
