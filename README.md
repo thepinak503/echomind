@@ -45,9 +45,14 @@ cargo install --git https://github.com/thepinak503/echomind.git --features voice
 
 ### 🚀 Quick Install (Universal)
 
-**One-liner for Linux/macOS:**
+**Fastest - Linux x86_64 (One-liner):**
 ```bash
-bash <(curl -fsSL https://is.gd/echomindlin)
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/curl-install.sh | bash
+```
+
+**Direct download to /usr/bin:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/echomind-linux-x86_64.gz | gunzip | sudo tee /usr/bin/echomind > /dev/null && sudo chmod +x /usr/bin/echomind
 ```
 
 **Alternative (full URL):**

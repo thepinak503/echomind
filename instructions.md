@@ -13,8 +13,10 @@ echomind/
 ├── Cargo.toml              # Rust dependencies
 ├── Cargo.lock              # Dependency lock
 ├── install.ps1             # Windows PowerShell installer
-├── install.sh              # Unix installer
-├── echomind.exe            # Pre-built Windows executable
+├── install.sh              # Full Unix installer
+├── curl-install.sh         # One-liner curl installer (Linux)
+├── echomind-linux-x86_64   # Pre-built Linux x86_64 binary
+├── echomind-linux-x86_64.gz # Compressed Linux binary (1.7MB)
 ├── README.md               # Main documentation
 ├── INSTALL.md              # Installation guide
 ├── CONTRIBUTING.md         # Contribution guidelines
@@ -70,9 +72,25 @@ cargo build --release
 - **Notes**: Run in Developer Command Prompt or use install.ps1 which handles setup
 
 ## Installation Process
+
+### Quick Install (One-liner)
+```bash
+# Linux x86_64 - Fastest method
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/curl-install.sh | bash
+
+# Or directly download and install
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/echomind-linux-x86_64.gz | gunzip > /tmp/echomind && sudo mv /tmp/echomind /usr/bin/echomind && sudo chmod +x /usr/bin/echomind
+```
+
 ### Automated Installers
 - **Windows**: `install.ps1` - Installs Rust if needed, builds or falls back to repo exe, copies to user bin and optionally System32
 - **Unix**: `install.sh` - Downloads and installs pre-built binaries
+- **curl-install.sh**: One-liner curl script for Linux x86_64
+
+### Pre-built Binaries in Repo
+- `echomind-linux-x86_64` - Linux x86_64 binary (uncompressed)
+- `echomind-linux-x86_64.gz` - Linux x86_64 binary (gzip compressed, 1.7MB)
+- These can be curled directly from GitHub raw URL
 
 ### Manual Installation
 1. Build the project
@@ -169,9 +187,20 @@ cargo fmt     # Formatting
 
 ## Deployment and Releases
 ### Pre-built Binaries
-- Update `echomind.exe` in repo root with latest build
+- `echomind-linux-x86_64` - Linux x86_64 binary (uncompressed, 3.6MB)
+- `echomind-linux-x86_64.gz` - Linux x86_64 binary (gzip compressed, 1.7MB)
+- These files are in repo root and can be curled directly
 - Ensure cross-platform compatibility
 - Test binaries before committing
+
+### Quick Install URLs
+```bash
+# One-liner installer
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/curl-install.sh | bash
+
+# Direct binary download
+curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/echomind-linux-x86_64.gz | gunzip | sudo tee /usr/bin/echomind > /dev/null && sudo chmod +x /usr/bin/echomind
+```
 
 ### Version Management
 - Update Cargo.toml version
