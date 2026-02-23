@@ -38,7 +38,7 @@ pdf = { version = "0.8", optional = true }
 image = { version = "0.24", optional = true }
 
 # Scheduling & automation
-cron = "0.12"
+cron = "0.15"
 
 # Advanced output
 syntect = "5.2"
