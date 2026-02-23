@@ -257,7 +257,7 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                 .split(size);
 
             draw_header(f, &app, chunks[0]);
-            let (lines, scroll) = draw_messages(f, &app, chunks[1], vertical_scroll);
+            let (lines, _scroll) = draw_messages(f, &app, chunks[1], vertical_scroll);
             total_lines = lines;
             draw_input(f, &app, chunks[2]);
             draw_footer(f, &app, chunks[3]);
@@ -459,7 +459,7 @@ fn save_and_print_session_log(app: &TuiApp) {
     let log_file = log_dir.join(format!("echomind_session_{}.log", timestamp));
 
     let mut file_content = String::new();
-    file_content.push_str(&format!("EchoMind TUI Session Log\n"));
+    file_content.push_str("EchoMind TUI Session Log\n");
     file_content.push_str(&format!("Started: {}\n", app.session_start.format("%Y-%m-%d %H:%M:%S")));
     file_content.push_str(&format!("Ended: {}\n", Local::now().format("%Y-%m-%d %H:%M:%S")));
     file_content.push_str(&format!("Provider: {}\n", app.provider.name()));
