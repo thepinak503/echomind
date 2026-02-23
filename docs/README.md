@@ -5,7 +5,7 @@
 
 A powerful, lightweight CLI tool in Rust for AI chat APIs. Pipe input, get responses, with streaming, interactive mode, and more.
 
-**Version:** 0.3.2
+**Version:** 0.3.5
 
 ## ✨ Features
 - **Multiple Providers**: OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, ChatAnywhere, ch.at
@@ -55,8 +55,9 @@ bash <(curl -fsSL https://is.gd/echomindlin)
 curl -fsSL https://raw.githubusercontent.com/thepinak503/echomind/master/install.sh | bash
 ```
 
-**Windows PowerShell:**
+**Windows:**
 ```powershell
+# PowerShell One-liner (Recommended)
 irm https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex
 ```
 
@@ -83,10 +84,26 @@ cd echomind
 makepkg -si
 ```
 
-**Debian/Ubuntu (.deb package coming soon):**
+**Debian/Ubuntu (.deb packages):**
 ```bash
-# Download .deb from releases
-dpkg -i echomind_*.deb
+# From releases page (coming soon)
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.5/echomind_0.3.5-1_amd64.deb
+sudo dpkg -i echomind_*.deb
+
+# Or build from source
+cd packaging/debian
+dpkg-buildpackage -us -uc -b
+```
+
+**Fedora/RHEL (.rpm packages):**
+```bash
+# From releases page (coming soon)
+wget https://github.com/thepinak503/echomind/releases/download/v0.3.5/echomind-0.3.5-1.x86_64.rpm
+sudo rpm -i echomind-*.rpm
+
+# Or build from source
+cd packaging/fedora
+rpmbuild -bb echomind.spec
 ```
 
 **Fedora/RHEL (.rpm package coming soon):**
@@ -109,7 +126,7 @@ brew install echomind
 **From Binary:**
 ```bash
 # Download and extract
-curl -LO https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind-macos-$(uname -m).tar.gz
+curl -LO https://github.com/thepinak503/echomind/releases/download/v0.3.5/echomind-macos-$(uname -m).tar.gz
 tar xzf echomind-macos-*.tar.gz
 sudo mv echomind /usr/local/bin/
 ```
@@ -130,21 +147,28 @@ cargo install --git https://github.com/thepinak503/echomind.git --features voice
 irm https://raw.githubusercontent.com/thepinak503/echomind/master/install.ps1 | iex
 ```
 
-**Scoop (coming soon):**
+**Scoop:**
 ```powershell
-scoop bucket add echomind https://github.com/thepinak503/echomind-bucket
 scoop install echomind
+# Update:
+scoop update echomind
+# Uninstall:
+scoop uninstall echomind
 ```
 
-**Chocolatey (coming soon):**
+**Chocolatey:**
 ```powershell
 choco install echomind
+# Update:
+choco upgrade echomind
+# Uninstall:
+choco uninstall echomind
 ```
 
 **From Binary:**
 ```powershell
 # Download and extract
-Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind-windows-amd64.zip" -OutFile "echomind.zip"
+Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/v0.3.5/echomind-windows-amd64.zip" -OutFile "echomind.zip"
 Expand-Archive -Path "echomind.zip" -DestinationPath "$env:LOCALAPPDATA\Programs\echomind"
 # Add to PATH: $env:LOCALAPPDATA\Programs\echomind
 ```
@@ -181,6 +205,87 @@ cargo build --release
 ```
 
 **📖 For detailed installation instructions for all platforms, see [INSTALL.md](INSTALL.md)**
+
+## 🔧 Build Dependencies
+
+### Arch Linux / Manjaro
+```bash
+sudo pacman -S --needed rust cargo openssl pkg-config clang gcc make
+```
+
+### Debian / Ubuntu / Linux Mint / Pop!_OS
+```bash
+sudo apt update
+sudo apt install -y rustc cargo libssl-dev pkg-config clang gcc make build-essential
+```
+
+### Fedora / RHEL / CentOS / Rocky Linux / AlmaLinux
+```bash
+sudo dnf install -y rust cargo openssl-devel pkg-config clang gcc make
+# Or for RHEL/CentOS with EPEL:
+sudo dnf install -y rust-toolset openssl-devel pkg-config clang gcc make
+```
+
+### OpenSUSE / SLES
+```bash
+sudo zypper install -y rust cargo openssl-devel pkg-config clang gcc make
+```
+
+### Alpine Linux
+```bash
+sudo apk add --no-cache rust cargo openssl-dev pkgconfig clang gcc make musl-dev
+```
+
+### Gentoo
+```bash
+sudo emerge --ask dev-lang/rust dev-libs/openssl sys-devel/clang sys-devel/gcc
+```
+
+### Void Linux
+```bash
+sudo xbps-install -S rust cargo openssl-devel pkg-config clang gcc make
+```
+
+### NixOS
+```nix
+# Add to configuration.nix or use nix-shell
+nix-shell -p rustc cargo openssl pkg-config clang gcc
+```
+
+### Solus
+```bash
+sudo eopkg install -y rustc cargo openssl-dev pkg-config clang gcc make
+```
+
+### 🍎 macOS
+```bash
+# Using Homebrew
+brew install rust openssl pkg-config
+
+# Or install Rust via rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+### 🪟 Windows
+```powershell
+# Install via winget
+winget install Rustlang.Rust.MSVC
+
+# Or via Chocolatey
+choco install rust
+
+# Or download from https://rustup.rs/
+# Also install Visual Studio Build Tools (for MSVC)
+```
+
+### Minimal Build (Any Platform)
+```bash
+# Only essential dependencies
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+git clone https://github.com/thepinak503/echomind.git
+cd echomind
+cargo build --release
+```
 
 ## 🚀 Usage
 
@@ -443,5 +548,4 @@ For connection errors, check:
 - Firewall settings
 - API endpoint status
 - Use `--verbose` for debugging
-
 

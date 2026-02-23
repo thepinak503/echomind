@@ -14,6 +14,46 @@ By participating in this project, you agree to maintain a respectful and inclusi
 - Git
 - Basic knowledge of Rust and async programming
 
+### Build Dependencies by Distribution
+
+#### Arch Linux / Manjaro
+```bash
+sudo pacman -S --needed rust cargo openssl pkg-config clang gcc make
+```
+
+#### Debian / Ubuntu / Linux Mint / Pop!_OS
+```bash
+sudo apt update
+sudo apt install -y rustc cargo libssl-dev pkg-config clang gcc make build-essential
+```
+
+#### Fedora / RHEL / CentOS / Rocky Linux / AlmaLinux
+```bash
+sudo dnf install -y rust cargo openssl-devel pkg-config clang gcc make
+```
+
+#### OpenSUSE / SLES
+```bash
+sudo zypper install -y rust cargo openssl-devel pkg-config clang gcc make
+```
+
+#### Alpine Linux
+```bash
+sudo apk add --no-cache rust cargo openssl-dev pkgconfig clang gcc make musl-dev
+```
+
+#### macOS
+```bash
+brew install rust openssl pkg-config
+```
+
+#### Windows
+```powershell
+# Install Rust via rustup
+winget install Rustlang.Rust.MSVC
+# Or download from https://rustup.rs/
+```
+
 ### Setting Up Development Environment
 
 1. Fork the repository on GitHub

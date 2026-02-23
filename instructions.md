@@ -31,8 +31,10 @@ echomind/
 ## Build Process
 ### Prerequisites
 - Rust 1.70+ (`cargo`, `rustc`)
+- OpenSSL development libraries
+- pkg-config
 - For Windows: MSVC compiler (Visual Studio Build Tools)
-- For Linux/macOS: Standard development tools
+- For Linux/macOS: Standard development tools (gcc, make, clang)
 
 ### Build Commands
 ```bash

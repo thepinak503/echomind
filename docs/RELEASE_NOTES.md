@@ -1,4 +1,4 @@
-# 🎉 Echomind v0.3.2 - Release
+# 🎉 Echomind v0.3.5 - Release
 
 **A powerful, cross-platform AI-powered CLI tool with extensive features for all operating systems!**
 

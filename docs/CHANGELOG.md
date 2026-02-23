@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.5] - 2026-02-23
+
+### Added
+- Build dependencies documentation for all Linux distributions
+- textwrap dependency for TUI text wrapping
+- TUI scroll support with PageUp/PageDown keys
+- Improved message rendering with proper line wrapping
+
+### Fixed
+- Removed clap_complete shell completion (causing build errors)
+- Fixed TUI message display to wrap long lines properly
+- Fixed CARGO_TARGET_DIR path in PKGBUILD package()
+
+### Changed
+- Updated GitHub workflows with improved CI/CD
+- Added dependabot for automated dependency updates
+- Added cargo-deny configuration for security checks
+
 ## [0.3.2] - 2025-11-18
 
 ### Fixed
