@@ -15,7 +15,9 @@ use ratatui::{
 use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use std::io;
+use std::fs::{self, OpenOptions};
+use std::io::{self, Write};
+use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use textwrap::Options;
 use tokio::sync::mpsc;
@@ -52,7 +54,8 @@ pub struct TuiApp {
     args: Args,
     last_duration: Option<Duration>,
     verbose: bool,
-    error_log: Vec<String>,
+    session_log: Vec<String>,
+    session_start: DateTime<Local>,
 }
 
 impl TuiApp {
@@ -64,6 +67,7 @@ impl TuiApp {
         let temperature = args.temperature.unwrap_or(config.defaults.temperature);
         let stream = args.stream;
         let verbose = args.verbose;
+        let session_start = Local::now();
 
         let mut messages = VecDeque::new();
         messages.push_back(ChatMessage {
@@ -87,8 +91,21 @@ impl TuiApp {
             args,
             last_duration: None,
             verbose,
-            error_log: Vec::new(),
+            session_log: Vec::new(),
+            session_start,
         }
+    }
+
+    fn log(&mut self, message: &str) {
+        let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
+        let log_entry = format!("[{}] {}", timestamp, message);
+        self.session_log.push(log_entry);
+    }
+
+    fn log_error(&mut self, error: &str) {
+        let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
+        let log_entry = format!("[{}] ERROR: {}", timestamp, error);
+        self.session_log.push(log_entry);
     }
 
     fn add_message(&mut self, role: String, content: String) {
@@ -119,7 +136,7 @@ impl TuiApp {
 /temp <value> - Set temperature (0.0-2.0)
 /stream       - Toggle streaming mode
 /verbose      - Toggle verbose mode
-/logs         - Show error logs (verbose mode)
+/logs         - Show session logs
 /quit, /q     - Exit TUI
 
 Keyboard Shortcuts:
@@ -147,6 +164,7 @@ Header Info:
             "/model" if parts.len() > 1 => {
                 self.model = parts[1..].join(" ");
                 self.add_message("System".to_string(), format!("Model: {}", self.model));
+                self.log(&format!("Model changed to: {}", self.model));
             }
             "/temp" if parts.len() > 1 => {
                 if let Ok(t) = parts[1].parse::<f32>() {
@@ -155,6 +173,7 @@ Header Info:
                         "System".to_string(),
                         format!("Temp: {:.1}", self.temperature),
                     );
+                    self.log(&format!("Temperature set to: {:.1}", self.temperature));
                 }
             }
             "/stream" => {
@@ -163,17 +182,14 @@ Header Info:
                     "System".to_string(),
                     format!("Stream: {}", if self.stream { "ON" } else { "OFF" }),
                 );
+                self.log(&format!("Stream mode: {}", if self.stream { "ON" } else { "OFF" }));
             }
             "/logs" => {
-                if self.verbose {
-                    if self.error_log.is_empty() {
-                        self.add_message("System".to_string(), "No error logs available.".to_string());
-                    } else {
-                        let logs = self.error_log.join("\n");
-                        self.add_message("System".to_string(), format!("Error Logs:\n{}", logs));
-                    }
+                if self.session_log.is_empty() {
+                    self.add_message("System".to_string(), "No session logs available.".to_string());
                 } else {
-                    self.add_message("System".to_string(), "Verbose mode is disabled. Run with --verbose to enable logging.".to_string());
+                    let logs = self.session_log.join("\n");
+                    self.add_message("System".to_string(), format!("Session Logs:\n{}", logs));
                 }
             }
             "/verbose" => {
@@ -182,17 +198,19 @@ Header Info:
                     "System".to_string(),
                     format!("Verbose mode: {}", if self.verbose { "ON" } else { "OFF" }),
                 );
+                self.log(&format!("Verbose mode: {}", if self.verbose { "ON" } else { "OFF" }));
             }
             "/quit" | "/q" => {
                 self.add_message("System".to_string(), "Goodbye!".to_string());
+                self.input.clear();
                 return true;
             }
             _ => {
-                self.add_message("System".to_string(), "Unknown command".to_string());
+                self.add_message("System".to_string(), format!("Unknown command: {}. Type /help for commands.", cmd));
             }
         }
         self.input.clear();
-        true
+        false
     }
 }
 
@@ -279,6 +297,7 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                                     }
                                     let input = app.input.clone();
                                     app.add_message("You".to_string(), input.clone());
+                                    app.log(&format!("User message: {}", if input.len() > 50 { &input[..50] } else { &input }));
                                     app.history.push(input.clone());
                                     app.history_index = None;
                                     app.input.clear();
@@ -388,16 +407,17 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                 if app.state == TuiState::Processing {
                     app.state = TuiState::Complete;
                     if let Some(start) = processing_start {
-                        app.last_duration = Some(start.elapsed());
+                        let duration = start.elapsed();
+                        app.last_duration = Some(duration);
+                        if app.verbose {
+                            app.log(&format!("Response completed in {:.2}s", duration.as_secs_f32()));
+                        }
                     }
                     processing_start = None;
                 }
             } else if chunk.starts_with("Error:") {
-                let error_msg = chunk.clone();
-                if app.verbose {
-                    let timestamp = Local::now().format("%H:%M:%S");
-                    app.error_log.push(format!("[{}] {}", timestamp, error_msg));
-                }
+                let error_msg = chunk.strip_prefix("Error:").unwrap_or(&chunk);
+                app.log_error(error_msg);
                 response_content.push_str(&chunk);
                 if let Some(last) = app.messages.back_mut() {
                     if last.role == app.provider.name() {
@@ -415,7 +435,89 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
         }
     }
 
+    save_and_print_session_log(&app);
+
     Ok(())
+}
+
+fn save_and_print_session_log(app: &TuiApp) {
+    if app.session_log.is_empty() && !app.verbose {
+        return;
+    }
+
+    let log_dir = dirs::config_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("echomind")
+        .join("logs");
+
+    if let Err(e) = fs::create_dir_all(&log_dir) {
+        eprintln!("\nFailed to create log directory: {}", e);
+        return;
+    }
+
+    let timestamp = Local::now().format("%Y%m%d_%H%M%S");
+    let log_file = log_dir.join(format!("echomind_session_{}.log", timestamp));
+
+    let mut file_content = String::new();
+    file_content.push_str(&format!("EchoMind TUI Session Log\n"));
+    file_content.push_str(&format!("Started: {}\n", app.session_start.format("%Y-%m-%d %H:%M:%S")));
+    file_content.push_str(&format!("Ended: {}\n", Local::now().format("%Y-%m-%d %H:%M:%S")));
+    file_content.push_str(&format!("Provider: {}\n", app.provider.name()));
+    file_content.push_str(&format!("Model: {}\n", app.model));
+    file_content.push_str(&format!("Temperature: {:.1}\n", app.temperature));
+    file_content.push_str(&format!("Stream: {}\n", if app.stream { "ON" } else { "OFF" }));
+    file_content.push_str(&format!("Verbose: {}\n", if app.verbose { "ON" } else { "OFF" }));
+    file_content.push_str("\n--- Session Log ---\n\n");
+
+    for entry in &app.session_log {
+        file_content.push_str(entry);
+        file_content.push('\n');
+    }
+
+    file_content.push_str("\n--- Chat History ---\n\n");
+    for msg in &app.messages {
+        let timestamp = msg.timestamp.format("%H:%M:%S");
+        file_content.push_str(&format!("[{}] {}: {}\n\n", timestamp, msg.role, msg.content));
+    }
+
+    match OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&log_file)
+    {
+        Ok(mut file) => {
+            if let Err(e) = file.write_all(file_content.as_bytes()) {
+                eprintln!("\nFailed to write log file: {}", e);
+            }
+        }
+        Err(e) => {
+            eprintln!("\nFailed to create log file: {}", e);
+            return;
+        }
+    }
+
+    println!("\n{}", "=".repeat(60));
+    println!("EchoMind TUI Session Ended");
+    println!("{}", "=".repeat(60));
+    println!("Session Duration: {}", {
+        let duration = (Local::now() - app.session_start).num_seconds();
+        let mins = duration / 60;
+        let secs = duration % 60;
+        format!("{}m {}s", mins, secs)
+    });
+    println!("Messages: {}", app.messages.len());
+    println!("Log File: {}", log_file.display());
+    println!("{}", "=".repeat(60));
+
+    if !app.session_log.is_empty() {
+        println!("\nSession Log:");
+        println!("{}", "-".repeat(40));
+        for entry in &app.session_log {
+            println!("{}", entry);
+        }
+        println!("{}", "-".repeat(40));
+    }
 }
 
 async fn send_message(
