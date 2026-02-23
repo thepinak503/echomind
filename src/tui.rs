@@ -51,6 +51,8 @@ pub struct TuiApp {
     config: Config,
     args: Args,
     last_duration: Option<Duration>,
+    verbose: bool,
+    error_log: Vec<String>,
 }
 
 impl TuiApp {
@@ -61,6 +63,7 @@ impl TuiApp {
         let model = args.model.as_ref().unwrap_or(&config.api.model).clone();
         let temperature = args.temperature.unwrap_or(config.defaults.temperature);
         let stream = args.stream;
+        let verbose = args.verbose;
 
         let mut messages = VecDeque::new();
         messages.push_back(ChatMessage {
@@ -83,6 +86,8 @@ impl TuiApp {
             config,
             args,
             last_duration: None,
+            verbose,
+            error_log: Vec::new(),
         }
     }
 
@@ -113,6 +118,8 @@ impl TuiApp {
 /model <name> - Change AI model
 /temp <value> - Set temperature (0.0-2.0)
 /stream       - Toggle streaming mode
+/verbose      - Toggle verbose mode
+/logs         - Show error logs (verbose mode)
 /quit, /q     - Exit TUI
 
 Keyboard Shortcuts:
@@ -123,8 +130,13 @@ Ctrl+L         - Clear screen
 Enter          - Send message
 Up/Down        - Navigate history
 Page Up/Down   - Scroll messages
+Home/End       - Jump to top/bottom
 Mouse Wheel    - Scroll messages
-Esc            - Exit"#;
+Esc            - Exit
+
+Header Info:
+  TEMP:X.X   - Current temperature
+  STREAM:ON/OFF - Streaming status"#;
                 self.add_message("System".to_string(), help_text.to_string());
             }
             "/clear" | "/c" => {
@@ -150,6 +162,25 @@ Esc            - Exit"#;
                 self.add_message(
                     "System".to_string(),
                     format!("Stream: {}", if self.stream { "ON" } else { "OFF" }),
+                );
+            }
+            "/logs" => {
+                if self.verbose {
+                    if self.error_log.is_empty() {
+                        self.add_message("System".to_string(), "No error logs available.".to_string());
+                    } else {
+                        let logs = self.error_log.join("\n");
+                        self.add_message("System".to_string(), format!("Error Logs:\n{}", logs));
+                    }
+                } else {
+                    self.add_message("System".to_string(), "Verbose mode is disabled. Run with --verbose to enable logging.".to_string());
+                }
+            }
+            "/verbose" => {
+                self.verbose = !self.verbose;
+                self.add_message(
+                    "System".to_string(),
+                    format!("Verbose mode: {}", if self.verbose { "ON" } else { "OFF" }),
                 );
             }
             "/quit" | "/q" => {
@@ -361,6 +392,18 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                     }
                     processing_start = None;
                 }
+            } else if chunk.starts_with("Error:") {
+                let error_msg = chunk.clone();
+                if app.verbose {
+                    let timestamp = Local::now().format("%H:%M:%S");
+                    app.error_log.push(format!("[{}] {}", timestamp, error_msg));
+                }
+                response_content.push_str(&chunk);
+                if let Some(last) = app.messages.back_mut() {
+                    if last.role == app.provider.name() {
+                        last.content = response_content.clone();
+                    }
+                }
             } else {
                 response_content.push_str(&chunk);
                 if let Some(last) = app.messages.back_mut() {
@@ -437,26 +480,38 @@ fn draw_header(f: &mut Frame, app: &TuiApp, area: Rect) {
         .border_style(Style::default().fg(Color::DarkGray))
         .style(Style::default().bg(Color::Rgb(17, 17, 17)));
 
+    let stream_indicator = if app.stream { "STREAM:ON" } else { "STREAM:OFF" };
+    let stream_color = if app.stream { Color::Green } else { Color::Red };
+
     let content = Line::from(vec![
         Span::styled(" EchoMind ", Style::default().fg(Color::Cyan).bold()),
-        Span::styled("|", Style::default().fg(Color::DarkGray)),
+        Span::styled(" | ", Style::default().fg(Color::DarkGray)),
         Span::styled(
-            format!(" {} ", app.provider.name()),
+            app.provider.name(),
             Style::default().fg(Color::Green),
         ),
-        Span::styled("|", Style::default().fg(Color::DarkGray)),
+        Span::styled(" | ", Style::default().fg(Color::DarkGray)),
         Span::styled(
-            format!(" {} ", app.model),
+            &app.model,
             Style::default().fg(Color::Yellow),
         ),
-        Span::styled("|", Style::default().fg(Color::DarkGray)),
+        Span::styled(" | ", Style::default().fg(Color::DarkGray)),
         Span::styled(
-            format!(" {:.1} ", app.temperature),
+            "TEMP:",
             Style::default().fg(Color::Magenta),
         ),
         Span::styled(
-            format!(" {}", if app.stream { "ON" } else { "OFF" }),
-            Style::default().fg(if app.stream { Color::Green } else { Color::Red }),
+            format!("{:.1}", app.temperature),
+            Style::default().fg(Color::White),
+        ),
+        Span::styled(" | ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            stream_indicator,
+            Style::default().fg(stream_color),
+        ),
+        Span::styled(
+            format!(" | v{}", env!("CARGO_PKG_VERSION")),
+            Style::default().fg(Color::DarkGray),
         ),
     ]);
 
