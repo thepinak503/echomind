@@ -5,10 +5,11 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 env:
   CARGO_TERM_COLOR: always
-  # Note: LTO is configured in Cargo.toml as "thin" to avoid proc-macro issues
-  # We only set optimization flags here, not LTO
   RUSTFLAGS: -C opt-level=3 -C codegen-units=1 -C embed-bitcode=yes
 
 concurrency:
@@ -23,267 +24,206 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux GNU
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: echomind
-            asset_name: echomind-linux-amd64
+            artifact: echomind
+            asset: echomind-linux-amd64
             name: Linux x86_64 GNU
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            artifact_name: echomind
-            asset_name: echomind-linux-arm64
+            artifact: echomind
+            asset: echomind-linux-arm64
             name: Linux ARM64 GNU
-          # Linux MUSL
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            artifact_name: echomind
-            asset_name: echomind-linux-amd64-musl
+            artifact: echomind
+            asset: echomind-linux-amd64-musl
             name: Linux x86_64 MUSL
           - os: ubuntu-latest
             target: aarch64-unknown-linux-musl
-            artifact_name: echomind
-            asset_name: echomind-linux-arm64-musl
+            artifact: echomind
+            asset: echomind-linux-arm64-musl
             name: Linux ARM64 MUSL
-          # Windows MSVC
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: echomind.exe
-            asset_name: echomind-windows-amd64
+            artifact: echomind.exe
+            asset: echomind-windows-amd64
             name: Windows x86_64 MSVC
-          # macOS
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact_name: echomind
-            asset_name: echomind-macos-amd64
+            artifact: echomind
+            asset: echomind-macos-amd64
             name: macOS x86_64
           - os: macos-14
             target: aarch64-apple-darwin
-            artifact_name: echomind
-            asset_name: echomind-macos-arm64
+            artifact: echomind
+            asset: echomind-macos-arm64
             name: macOS ARM64
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: ${{ matrix.target }}
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-    # Linux dependencies
-    - name: Install system dependencies (Linux)
-      if: startsWith(matrix.os, 'ubuntu')
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config
 
-    # Linux GNU ARM64 cross-compilation
-    - name: Install cross-compilation tools (Linux ARM64 GNU)
-      if: matrix.target == 'aarch64-unknown-linux-gnu'
-      run: |
-        sudo dpkg --add-architecture arm64
-        sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
+      - name: Install ARM64 GNU cross-compilation
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
-    - name: Set cross-compilation environment (Linux ARM64 GNU)
-      if: matrix.target == 'aarch64-unknown-linux-gnu'
-      run: |
-        echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-        echo "CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++" >> $GITHUB_ENV
-        echo "AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar" >> $GITHUB_ENV
-        echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+      - name: Install MUSL tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get install -y musl-tools
 
-    # Linux MUSL
-    - name: Install MUSL tools (Linux MUSL)
-      if: contains(matrix.target, 'musl')
-      run: |
-        sudo apt-get install -y musl-tools
+      - name: Install ARM64 MUSL cross-compilation
+        if: matrix.target == 'aarch64-unknown-linux-musl'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          echo "CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
-    - name: Install MUSL cross-compilation tools (Linux ARM64 MUSL)
-      if: matrix.target == 'aarch64-unknown-linux-musl'
-      run: |
-        sudo apt-get install -y gcc-aarch64-linux-gnu
-        echo "CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-        echo "CXX_aarch64_unknown_linux_musl=aarch64-linux-gnu-g++" >> $GITHUB_ENV
-        echo "AR_aarch64_unknown_linux_musl=aarch64-linux-gnu-ar" >> $GITHUB_ENV
-        echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+      - name: Setup MSVC
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
 
-    # Windows MSVC dependencies
-    - name: Setup Windows MSVC
-      if: matrix.os == 'windows-latest'
-      uses: ilammy/msvc-dev-cmd@v1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
-    # Cache cargo
-    - name: Cache cargo registry
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
-    - name: Cache cargo index
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Strip (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          if [[ "${{ matrix.target }}" == *"aarch64"* ]]; then
+            aarch64-linux-gnu-strip target/${{ matrix.target }}/release/${{ matrix.artifact }} || strip target/${{ matrix.target }}/release/${{ matrix.artifact }}
+          else
+            strip target/${{ matrix.target }}/release/${{ matrix.artifact }}
+          fi
 
-    - name: Cache target directory
-      uses: actions/cache@v4
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Package (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../${{ matrix.asset }}.tar.gz ${{ matrix.artifact }}
+          cd ../../..
+          shasum -a 256 ${{ matrix.asset }}.tar.gz > ${{ matrix.asset }}.tar.gz.sha256
 
-    # Build
-    - name: Build release binary (Linux/macOS)
-      if: matrix.os != 'windows-latest'
-      run: |
-        cargo build --release --target ${{ matrix.target }}
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd target\${{ matrix.target }}\release
+          Compress-Archive -Path ${{ matrix.artifact }} -DestinationPath ..\..\..\${{ matrix.asset }}.zip
+          cd ..\..\..
+          $hash = (Get-FileHash ${{ matrix.asset }}.zip -Algorithm SHA256).Hash.ToLower()
+          "$hash  ${{ matrix.asset }}.zip" | Out-File -FilePath ${{ matrix.asset }}.zip.sha256
 
-    - name: Build release binary (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        cargo build --release --target ${{ matrix.target }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            ${{ matrix.asset }}.tar.gz
+            ${{ matrix.asset }}.zip
+            *.sha256
+          if-no-files-found: ignore
 
-    # Strip binaries
-    - name: Strip binary (Linux/macOS)
-      if: matrix.os != 'windows-latest'
-      run: |
-        if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ] || [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
-          aarch64-linux-gnu-strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
-        else
-          strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
-        fi
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.asset }}.tar.gz
+            ${{ matrix.asset }}.zip
+            *.sha256
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # Package
-    - name: Generate checksums (Linux/macOS)
-      if: matrix.os != 'windows-latest'
-      run: |
-        cd target/${{ matrix.target }}/release
-        shasum -a 256 ${{ matrix.artifact_name }} > checksums.txt
-        cd ../../..
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-cyclonedx
+        run: cargo install cargo-cyclonedx
+      - name: Generate SBOM
+        run: cargo cyclonedx --all --format json --output-pattern package
+      - name: Upload SBOM
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.json'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Generate checksums (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        cd target\${{ matrix.target }}\release
-        $hash = (Get-FileHash ${{ matrix.artifact_name }} -Algorithm SHA256).Hash.ToLower()
-        "$hash  ${{ matrix.artifact_name }}" | Out-File -FilePath checksums.txt
-        cd ..\..\..
-
-    - name: Create archive (Linux/macOS)
-      if: matrix.os != 'windows-latest'
-      run: |
-        cd target/${{ matrix.target }}/release
-        tar czf ../../../${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }} checksums.txt
-        cd ../../..
-
-    - name: Create archive (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        cd target\${{ matrix.target }}\release
-        Compress-Archive -Path ${{ matrix.artifact_name }},checksums.txt -DestinationPath ..\..\..\${{ matrix.asset_name }}.zip
-        cd ..\..\..
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.asset_name }}
-        path: |
-          ${{ matrix.asset_name }}.tar.gz
-          ${{ matrix.asset_name }}.zip
-        if-no-files-found: ignore
-
-    - name: Upload to release
-      uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: |
-          ${{ matrix.asset_name }}.tar.gz
-          ${{ matrix.asset_name }}.zip
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release-summary:
-    name: Create Release Summary
+  release-notes:
+    name: Update Release Notes
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Generate release notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## Release ${{ github.ref_name }}
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
+          ### Downloads
 
-    - name: Generate release notes
-      run: |
-        cat > release_notes.md << 'EOF'
-        ## Release ${{ github.ref_name }}
+          | Platform | Architecture | Download |
+          |----------|--------------|----------|
+          | Linux (GNU) | x86_64 | [echomind-linux-amd64.tar.gz](echomind-linux-amd64.tar.gz) |
+          | Linux (GNU) | ARM64 | [echomind-linux-arm64.tar.gz](echomind-linux-arm64.tar.gz) |
+          | Linux (MUSL) | x86_64 | [echomind-linux-amd64-musl.tar.gz](echomind-linux-amd64-musl.tar.gz) |
+          | Linux (MUSL) | ARM64 | [echomind-linux-arm64-musl.tar.gz](echomind-linux-arm64-musl.tar.gz) |
+          | Windows | x86_64 | [echomind-windows-amd64.zip](echomind-windows-amd64.zip) |
+          | macOS (Intel) | x86_64 | [echomind-macos-amd64.tar.gz](echomind-macos-amd64.tar.gz) |
+          | macOS (Apple Silicon) | ARM64 | [echomind-macos-arm64.tar.gz](echomind-macos-arm64.tar.gz) |
 
-        ### Downloads
+          ### Installation
 
-        | Platform | Architecture | Download |
-        |----------|--------------|----------|
-        | Linux x86_64 (GNU) | amd64 | [echomind-linux-amd64.tar.gz](echomind-linux-amd64.tar.gz) |
-        | Linux ARM64 (GNU) | arm64 | [echomind-linux-arm64.tar.gz](echomind-linux-arm64.tar.gz) |
-        | Linux x86_64 (MUSL) | amd64 | [echomind-linux-amd64-musl.tar.gz](echomind-linux-amd64-musl.tar.gz) |
-        | Linux ARM64 (MUSL) | arm64 | [echomind-linux-arm64-musl.tar.gz](echomind-linux-arm64-musl.tar.gz) |
-        | Windows | x86_64 | [echomind-windows-amd64.zip](echomind-windows-amd64.zip) |
-        | macOS | x86_64 | [echomind-macos-amd64.tar.gz](echomind-macos-amd64.tar.gz) |
-        | macOS (Apple Silicon) | arm64 | [echomind-macos-arm64.tar.gz](echomind-macos-arm64.tar.gz) |
+          #### Linux
+          ```bash
+          wget https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-linux-amd64.tar.gz
+          tar xzf echomind-linux-amd64.tar.gz
+          sudo mv echomind /usr/local/bin/
+          ```
 
-        ### Installation
+          #### macOS
+          ```bash
+          curl -LO https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-macos-arm64.tar.gz
+          tar xzf echomind-macos-arm64.tar.gz
+          sudo mv echomind /usr/local/bin/
+          ```
 
-        #### Linux
-        ```bash
-        # Download and extract (GNU version)
-        wget https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-linux-amd64.tar.gz
-        tar xzf echomind-linux-amd64.tar.gz
-        sudo mv echomind /usr/local/bin/
-        ```
+          #### Windows
+          ```powershell
+          Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-windows-amd64.zip" -OutFile "echomind.zip"
+          Expand-Archive echomind.zip -DestinationPath .
+          ```
 
-        #### macOS
-        ```bash
-        # Download and extract
-        curl -L https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-macos-arm64.tar.gz -o echomind-macos-arm64.tar.gz
-        tar xzf echomind-macos-arm64.tar.gz
-        sudo mv echomind /usr/local/bin/
-        ```
+          ### Verification
+          Each download includes SHA256 checksums for verification.
 
-        #### Windows
-        ```powershell
-        # Download and extract
-        Invoke-WebRequest -Uri "https://github.com/thepinak503/echomind/releases/download/${{ github.ref_name }}/echomind-windows-amd64.zip" -OutFile "echomind-windows-amd64.zip"
-        Expand-Archive -Path echomind-windows-amd64.zip -DestinationPath .
-        # Add to PATH or move to desired location
-        ```
+          Full changelog: [CHANGELOG.md](https://github.com/thepinak503/echomind/blob/main/docs/CHANGELOG.md)
+          EOF
 
-        ### Verification
-
-        Each release includes SHA256 checksums for verification:
-        ```bash
-        # Linux/macOS
-        shasum -a 256 echomind
-
-        # Windows
-        certutil -hashfile echomind.exe SHA256
-        ```
-
-        ---
-
-        Full changelog available in [CHANGELOG.md](https://github.com/thepinak503/echomind/blob/main/docs/CHANGELOG.md)
-        EOF
-
-    - name: Update release description
-      uses: softprops/action-gh-release@v2
-      with:
-        body_path: release_notes.md
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

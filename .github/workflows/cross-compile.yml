@@ -1,377 +1,102 @@
-name: Cross-Compile
+name: Cross-Compile Test
 
 on:
   push:
-    branches: [ main, master ]
-    tags:
-      - 'v*'
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
-  # Note: LTO is configured in Cargo.toml as "thin" to avoid proc-macro issues
-  RUSTFLAGS: -C opt-level=3 -C codegen-units=1 -C embed-bitcode=yes
+  RUSTFLAGS: -C opt-level=3
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-linux-gnu:
-    name: Build Linux GNU ${{ matrix.target }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
-        include:
-          - target: x86_64-unknown-linux-gnu
-            arch: amd64
-          - target: aarch64-unknown-linux-gnu
-            arch: arm64
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: ${{ matrix.target }}
-
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config
-
-    - name: Install cross-compilation tools (ARM64)
-      if: matrix.target == 'aarch64-unknown-linux-gnu'
-      run: |
-        sudo dpkg --add-architecture arm64
-        sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
-
-    - name: Set cross-compilation environment (ARM64)
-      if: matrix.target == 'aarch64-unknown-linux-gnu'
-      run: |
-        echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-        echo "CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++" >> $GITHUB_ENV
-        echo "AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar" >> $GITHUB_ENV
-        echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-
-    - name: Cache cargo registry
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache cargo index
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache target directory
-      uses: actions/cache@v4
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Build release binary
-      run: |
-        cargo build --release --target ${{ matrix.target }}
-
-    - name: Strip binary
-      run: |
-        if [[ "${{ matrix.target }}" == *"aarch64"* ]]; then
-          aarch64-linux-gnu-strip target/${{ matrix.target }}/release/echomind || true
-        else
-          strip target/${{ matrix.target }}/release/echomind
-        fi
-
-    - name: Package
-      run: |
-        cd target/${{ matrix.target }}/release
-        tar czf ../../../echomind-linux-${{ matrix.arch }}.tar.gz echomind
-        cd ../../..
-
-    - name: Generate checksums
-      run: |
-        shasum -a 256 echomind-linux-${{ matrix.arch }}.tar.gz > echomind-linux-${{ matrix.arch }}.tar.gz.sha256
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: echomind-linux-${{ matrix.arch }}
-        path: |
-          echomind-linux-${{ matrix.arch }}.tar.gz
-          echomind-linux-${{ matrix.arch }}.tar.gz.sha256
-
-  build-linux-musl:
-    name: Build Linux MUSL ${{ matrix.target }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-musl
-        include:
-          - target: x86_64-unknown-linux-musl
-            arch: amd64-musl
-          - target: aarch64-unknown-linux-musl
-            arch: arm64-musl
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: ${{ matrix.target }}
-
-    - name: Install MUSL tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y musl-tools
-
-    - name: Install cross-compilation tools (ARM64 MUSL)
-      if: matrix.target == 'aarch64-unknown-linux-musl'
-      run: |
-        sudo apt-get install -y gcc-aarch64-linux-gnu
-
-    - name: Set cross-compilation environment (ARM64 MUSL)
-      if: matrix.target == 'aarch64-unknown-linux-musl'
-      run: |
-        echo "CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-        echo "CXX_aarch64_unknown_linux_musl=aarch64-linux-gnu-g++" >> $GITHUB_ENV
-        echo "AR_aarch64_unknown_linux_musl=aarch64-linux-gnu-ar" >> $GITHUB_ENV
-        echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-
-    - name: Cache cargo registry
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache cargo index
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache target directory
-      uses: actions/cache@v4
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Build release binary
-      run: |
-        cargo build --release --target ${{ matrix.target }}
-
-    - name: Strip binary
-      run: |
-        if [[ "${{ matrix.target }}" == *"aarch64"* ]]; then
-          aarch64-linux-gnu-strip target/${{ matrix.target }}/release/echomind || true
-        else
-          strip target/${{ matrix.target }}/release/echomind
-        fi
-
-    - name: Package
-      run: |
-        cd target/${{ matrix.target }}/release
-        tar czf ../../../echomind-linux-${{ matrix.arch }}.tar.gz echomind
-        cd ../../..
-
-    - name: Generate checksums
-      run: |
-        shasum -a 256 echomind-linux-${{ matrix.arch }}.tar.gz > echomind-linux-${{ matrix.arch }}.tar.gz.sha256
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: echomind-linux-${{ matrix.arch }}
-        path: |
-          echomind-linux-${{ matrix.arch }}.tar.gz
-          echomind-linux-${{ matrix.arch }}.tar.gz.sha256
-
-  build-macos:
-    name: Build macOS ${{ matrix.target }}
+  build:
+    name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            arch: amd64
-          - target: aarch64-apple-darwin
-            os: macos-14
-            arch: arm64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-14
+            target: aarch64-apple-darwin
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: ${{ matrix.target }}
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-    - name: Cache cargo registry
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install Linux dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config
 
-    - name: Cache cargo index
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install ARM64 GNU cross-compilation
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
-    - name: Cache target directory
-      uses: actions/cache@v4
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install MUSL tools
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get install -y musl-tools
 
-    - name: Build release binary
-      run: |
-        cargo build --release --target ${{ matrix.target }}
+      - name: Install ARM64 MUSL cross-compilation
+        if: matrix.target == 'aarch64-unknown-linux-musl'
+        run: |
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          echo "CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
-    - name: Strip binary
-      run: strip target/${{ matrix.target }}/release/echomind
+      - name: Setup MSVC
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Package
-      run: |
-        cd target/${{ matrix.target }}/release
-        tar czf ../../../echomind-macos-${{ matrix.arch }}.tar.gz echomind
-        cd ../../..
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
-    - name: Generate checksums
-      run: |
-        shasum -a 256 echomind-macos-${{ matrix.arch }}.tar.gz > echomind-macos-${{ matrix.arch }}.tar.gz.sha256
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: echomind-macos-${{ matrix.arch }}
-        path: |
-          echomind-macos-${{ matrix.arch }}.tar.gz
-          echomind-macos-${{ matrix.arch }}.tar.gz.sha256
+      - name: Check binary
+        if: matrix.os != 'windows-latest'
+        run: file target/${{ matrix.target }}/release/echomind
 
-  build-windows-msvc:
-    name: Build Windows MSVC
-    runs-on: windows-latest
+      - name: Check binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: dir target\${{ matrix.target }}\release\echomind.exe
 
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    - name: Setup MSVC
-      uses: ilammy/msvc-dev-cmd@v1
-
-    - name: Cache cargo registry
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache cargo index
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Cache target directory
-      uses: actions/cache@v4
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Build release binary
-      run: |
-        cargo build --release
-
-    - name: Package
-      run: |
-        cd target\release
-        Compress-Archive -Path echomind.exe -DestinationPath ..\..\echomind-windows-amd64-msvc.zip
-        cd ..\..
-
-    - name: Generate checksums
-      run: |
-        $hash = (Get-FileHash echomind-windows-amd64-msvc.zip -Algorithm SHA256).Hash.ToLower()
-        "$hash  echomind-windows-amd64-msvc.zip" | Out-File -FilePath echomind-windows-amd64-msvc.zip.sha256
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: echomind-windows-amd64-msvc
-        path: |
-          echomind-windows-amd64-msvc.zip
-          echomind-windows-amd64-msvc.zip.sha256
-
-  test-artifacts:
-    name: Test Build Artifacts
-    needs: [build-linux-gnu, build-linux-musl, build-macos, build-windows-msvc]
+  verify-artifacts:
+    name: Verify Build Matrix
+    needs: build
     runs-on: ubuntu-latest
     if: always()
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-
-    - name: List downloaded artifacts
-      run: |
-        echo "Downloaded artifacts:"
-        find artifacts -type f -exec ls -lh {} \;
-
-    - name: Verify tar.gz files
-      run: |
-        find artifacts -name "*.tar.gz" -exec tar -tzf {} \; | head -10
-
-    - name: Verify zip files
-      run: |
-        find artifacts -name "*.zip" -exec unzip -l {} \; | head -10
-
-  release:
-    name: Create Release
-    needs: [build-linux-gnu, build-linux-musl, build-macos, build-windows-msvc]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-
-    - name: Flatten artifacts
-      run: |
-        find artifacts -type f -exec cp {} . \;
-
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          echomind-*.tar.gz
-          echomind-*.tar.gz.sha256
-          echomind-*.zip
-          echomind-*.zip.sha256
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Summary
+        run: |
+          echo "## Cross-Compile Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All targets built successfully: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
