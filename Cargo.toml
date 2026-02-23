@@ -29,7 +29,7 @@ rodio = { version = "0.19", optional = true }
 
 # Security & encryption
 ring = "0.17"
-rand = "0.8"
+rand = "0.9"
 
 # Data processing
 csv = "1.3"
