@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::io;
 use std::time::{Duration, Instant};
+use textwrap::Options;
 use tokio::sync::mpsc;
 
 const MAX_INPUT_LENGTH: usize = 4096;
@@ -48,6 +49,7 @@ pub struct TuiApp {
     config: Config,
     args: Args,
     last_duration: Option<Duration>,
+    scroll_offset: usize,
 }
 
 impl TuiApp {
@@ -80,6 +82,7 @@ impl TuiApp {
             config,
             args,
             last_duration: None,
+            scroll_offset: 0,
         }
     }
 
@@ -92,6 +95,7 @@ impl TuiApp {
         if self.messages.len() > 100 {
             self.messages.pop_front();
         }
+        self.scroll_offset = 0;
     }
 
     fn handle_command(&mut self) -> bool {
@@ -119,6 +123,7 @@ Ctrl+S         - Toggle streaming
 Ctrl+L         - Clear screen
 Enter          - Send message
 Up/Down        - Navigate history
+Page Up/Down   - Scroll messages
 Esc            - Exit"#;
                 self.add_message("System".to_string(), help_text.to_string());
             }
@@ -126,6 +131,7 @@ Esc            - Exit"#;
                 self.messages.clear();
                 self.input.clear();
                 self.state = TuiState::Idle;
+                self.scroll_offset = 0;
             }
             "/model" if parts.len() > 1 => {
                 self.model = parts[1..].join(" ");
@@ -157,6 +163,14 @@ Esc            - Exit"#;
         }
         self.input.clear();
         true
+    }
+
+    fn scroll_up(&mut self, lines: usize) {
+        self.scroll_offset = self.scroll_offset.saturating_add(lines);
+    }
+
+    fn scroll_down(&mut self, lines: usize) {
+        self.scroll_offset = self.scroll_offset.saturating_sub(lines);
     }
 }
 
@@ -207,6 +221,7 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                         KeyCode::Char('l') => {
                             app.messages.clear();
                             app.state = TuiState::Idle;
+                            app.scroll_offset = 0;
                         }
                         _ => {}
                     }
@@ -290,6 +305,12 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                                 }
                             }
                         }
+                        KeyCode::PageUp => {
+                            app.scroll_up(5);
+                        }
+                        KeyCode::PageDown => {
+                            app.scroll_down(5);
+                        }
                         KeyCode::Esc => break,
                         _ => {}
                     }
@@ -337,7 +358,7 @@ async fn send_message(
         Ok(c) => c,
         Err(e) => {
             let _ = tx.send(format!("Error: {}", e));
-            let _ = tx.send(String::new()); // Signal completion
+            let _ = tx.send(String::new());
             return;
         }
     };
@@ -373,7 +394,6 @@ async fn send_message(
         let _ = tx.send(format!("Error: {}", e));
     }
 
-    // Send empty string to signal completion
     let _ = tx.send(String::new());
 }
 
@@ -403,23 +423,23 @@ fn draw_header(f: &mut Frame, app: &TuiApp, area: Rect) {
 
     let content = Line::from(vec![
         Span::styled(" EchoMind ", Style::default().fg(Color::Cyan).bold()),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
+        Span::styled("|", Style::default().fg(Color::DarkGray)),
         Span::styled(
             format!(" {} ", app.provider.name()),
             Style::default().fg(Color::Green),
         ),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
+        Span::styled("|", Style::default().fg(Color::DarkGray)),
         Span::styled(
             format!(" {} ", app.model),
             Style::default().fg(Color::Yellow),
         ),
-        Span::styled("│", Style::default().fg(Color::DarkGray)),
+        Span::styled("|", Style::default().fg(Color::DarkGray)),
         Span::styled(
             format!(" {:.1} ", app.temperature),
             Style::default().fg(Color::Magenta),
         ),
         Span::styled(
-            if app.stream { "ON" } else { "OFF" },
+            format!(" {}", if app.stream { "ON" } else { "OFF" }),
             Style::default().fg(if app.stream { Color::Green } else { Color::Red }),
         ),
     ]);
@@ -432,40 +452,89 @@ fn draw_header(f: &mut Frame, app: &TuiApp, area: Rect) {
     );
 }
 
+fn wrap_text(text: &str, width: usize) -> Vec<String> {
+    if width == 0 {
+        return text.lines().map(String::from).collect();
+    }
+
+    let options = Options::new(width);
+    
+    let mut wrapped_lines = Vec::new();
+    
+    for line in text.lines() {
+        let wrapped = textwrap::wrap(line, &options);
+        if wrapped.is_empty() {
+            wrapped_lines.push(String::new());
+        } else {
+            for wrapped_line in wrapped {
+                wrapped_lines.push(wrapped_line.into_owned());
+            }
+        }
+    }
+    
+    wrapped_lines
+}
+
 fn draw_messages(f: &mut Frame, app: &TuiApp, area: Rect) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Rgb(60, 60, 60)))
         .style(Style::default().bg(Color::Rgb(10, 10, 10)));
 
-    let items: Vec<ListItem> = app
-        .messages
+    let content_width = area.width.saturating_sub(4) as usize;
+    
+    let mut all_lines: Vec<(String, Color, Color)> = Vec::new();
+    
+    for (i, msg) in app.messages.iter().enumerate() {
+        let role_color = match msg.role.as_str() {
+            "You" => Color::Cyan,
+            "System" => Color::Yellow,
+            _ => Color::Green,
+        };
+        
+        let bg_color = if i % 2 == 0 {
+            Color::Rgb(12, 12, 12)
+        } else {
+            Color::Rgb(15, 15, 15)
+        };
+
+        let header = format!("[{}] {}", msg.timestamp.format("%H:%M"), msg.role);
+        all_lines.push((header, role_color, bg_color));
+
+        let wrapped_content = wrap_text(&msg.content, content_width);
+        for line in wrapped_content {
+            all_lines.push((line, Color::White, bg_color));
+        }
+        
+        all_lines.push((String::new(), Color::White, bg_color));
+    }
+
+    let total_lines = all_lines.len();
+    let visible_height = area.height.saturating_sub(2) as usize;
+    
+    let scroll_offset = app.scroll_offset.min(total_lines.saturating_sub(visible_height));
+    let visible_lines: Vec<_> = all_lines
         .iter()
-        .enumerate()
-        .map(|(i, msg)| {
-            let role_color = match msg.role.as_str() {
-                "You" => Color::Cyan,
-                "System" => Color::Yellow,
-                _ => Color::Green,
-            };
+        .skip(scroll_offset)
+        .take(visible_height)
+        .collect();
 
-            let content = format!(
-                "[{}] {}\n{}",
-                msg.timestamp.format("%H:%M"),
-                msg.role.as_str().bold().fg(role_color),
-                msg.content
-            );
-
-            ListItem::new(Text::from(content)).style(Style::default().bg(if i % 2 == 0 {
-                Color::Rgb(12, 12, 12)
-            } else {
-                Color::Rgb(15, 15, 15)
-            }))
+    let items: Vec<ListItem> = visible_lines
+        .iter()
+        .map(|(text, fg_color, bg_color)| {
+            ListItem::new(Text::from(text.clone()))
+                .style(Style::default().fg(*fg_color).bg(*bg_color))
         })
         .collect();
 
+    let title = if total_lines > visible_height {
+        format!(" Messages [{}/{}] ", total_lines.saturating_sub(scroll_offset), total_lines)
+    } else {
+        " Messages ".to_string()
+    };
+
     let list = List::new(items)
-        .block(block)
+        .block(block.title(title))
         .style(Style::default().fg(Color::White));
     f.render_widget(list, area);
 }
@@ -496,7 +565,7 @@ fn draw_input(f: &mut Frame, app: &TuiApp, area: Rect) {
     };
 
     let block = Block::default()
-        .title(format!(" Input │ {} ", status))
+        .title(format!(" Input | {} ", status))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(Color::Rgb(20, 20, 20)));
@@ -507,7 +576,7 @@ fn draw_input(f: &mut Frame, app: &TuiApp, area: Rect) {
             Style::default().fg(Color::White),
         )),
         Line::from(Span::styled(
-            "Enter to send | ↑↓ history | /help for commands",
+            "Enter: send | Up/Down: history | PgUp/PgDn: scroll | /help",
             Style::default().fg(Color::DarkGray),
         )),
     ];
@@ -526,7 +595,7 @@ fn draw_footer(f: &mut Frame, _app: &TuiApp, area: Rect) {
         Span::styled("Ctrl+C/Q Exit  ", Style::default().fg(Color::DarkGray)),
         Span::styled("Ctrl+T Temp  ", Style::default().fg(Color::DarkGray)),
         Span::styled("Ctrl+S Stream  ", Style::default().fg(Color::DarkGray)),
-        Span::styled("↑↓ History", Style::default().fg(Color::Yellow)),
+        Span::styled("PgUp/PgDn Scroll", Style::default().fg(Color::Yellow)),
     ])])
     .style(Style::default().bg(Color::Rgb(17, 17, 17)))
     .alignment(Alignment::Center);
