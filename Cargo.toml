@@ -49,7 +49,7 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 url = "2.5"
 
 # Performance monitoring
-lru = "0.12"
+lru = "0.16"
 
 # Accessibility
 crossterm = "0.27"
