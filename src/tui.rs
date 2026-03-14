@@ -141,6 +141,7 @@ impl TuiApp {
 
 Keyboard Shortcuts:
 Ctrl+C, Ctrl+Q - Exit
+Ctrl+J         - Insert newline (multiline)
 Ctrl+T         - Cycle temperature
 Ctrl+S         - Toggle streaming
 Ctrl+L         - Clear screen
@@ -236,6 +237,29 @@ fn _decrypt(data: &[u8]) -> Result<Vec<u8>> {
     Ok(out.to_vec())
 }
 
+fn process_stream_chunk(chunk: &str) -> String {
+    let mut result = String::new();
+    let mut prev_was_newline = false;
+    
+    for c in chunk.chars() {
+        match c {
+            '\n' => {
+                if !prev_was_newline {
+                    result.push(c);
+                    prev_was_newline = true;
+                }
+            }
+            '\r' => {}
+            _ => {
+                result.push(c);
+                prev_was_newline = false;
+            }
+        }
+    }
+    
+    result
+}
+
 pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) -> io::Result<()> {
     let (tx, mut rx) = mpsc::unbounded_channel::<String>();
     let mut response_content = String::new();
@@ -324,6 +348,12 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                                         args,
                                         tx_clone,
                                     ));
+                                }
+                            }
+                            KeyCode::Char('j') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                                if app.state != TuiState::Processing && app.input.len() < MAX_INPUT_LENGTH {
+                                    app.input.push('\n');
+                                    app.history_index = None;
                                 }
                             }
                             KeyCode::Char(c) => {
@@ -425,7 +455,8 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                     }
                 }
             } else {
-                response_content.push_str(&chunk);
+                let processed_chunk = process_stream_chunk(&chunk);
+                response_content.push_str(&processed_chunk);
                 if let Some(last) = app.messages.back_mut() {
                     if last.role == app.provider.name() {
                         last.content = response_content.clone();
@@ -777,7 +808,7 @@ fn draw_input(f: &mut Frame, app: &TuiApp, area: Rect) {
             Style::default().fg(Color::White),
         )),
         Line::from(Span::styled(
-            "Enter: send | Up/Down: history | PgUp/PgDn | Mouse: scroll | /help",
+            "Enter: send | Ctrl+J: newline | Up/Down: history | PgUp/PgDn | Mouse: scroll | /help",
             Style::default().fg(Color::DarkGray),
         )),
     ];
