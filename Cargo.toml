@@ -58,7 +58,7 @@ textwrap = "0.16"
 
 # AI-powered features
 regex = "1.10"
-whatlang = "0.16"
+whatlang = "0.18"
 
 # Security
 hex = "0.4"
