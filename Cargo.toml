@@ -25,7 +25,7 @@ base64 = "0.22"
 
 # Voice support (disabled for Windows build issues)
 cpal = { version = "0.15", optional = true }
-rodio = { version = "0.19", optional = true }
+rodio = { version = "0.22", optional = true }
 
 # Security & encryption
 ring = "0.17"
