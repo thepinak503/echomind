@@ -1,0 +1,9 @@
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/iana_time_zone-427994a226b6045b.d: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/ffi_utils.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/tz_linux.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libiana_time_zone-427994a226b6045b.rlib: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/ffi_utils.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/tz_linux.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libiana_time_zone-427994a226b6045b.rmeta: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/ffi_utils.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/tz_linux.rs
+
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/lib.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/ffi_utils.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/iana-time-zone-0.1.65/src/tz_linux.rs:

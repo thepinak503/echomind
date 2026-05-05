@@ -1,0 +1,10 @@
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/weezl-0e14a90d432a7c4a.d: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/decode.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/encode.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/error.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libweezl-0e14a90d432a7c4a.rlib: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/decode.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/encode.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/error.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libweezl-0e14a90d432a7c4a.rmeta: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/decode.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/encode.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/error.rs
+
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/lib.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/decode.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/encode.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/weezl-0.1.12/src/error.rs:

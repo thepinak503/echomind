@@ -1,0 +1,9 @@
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/signal_hook_registry-b9d8fd38bfb91364.d: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/half_lock.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/vec_map.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libsignal_hook_registry-b9d8fd38bfb91364.rlib: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/half_lock.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/vec_map.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libsignal_hook_registry-b9d8fd38bfb91364.rmeta: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/half_lock.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/vec_map.rs
+
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/lib.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/half_lock.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/signal-hook-registry-1.4.8/src/vec_map.rs:

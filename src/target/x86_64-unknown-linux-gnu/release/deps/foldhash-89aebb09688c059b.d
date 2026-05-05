@@ -1,0 +1,10 @@
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/foldhash-89aebb09688c059b.d: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/fast.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/quality.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/seed.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libfoldhash-89aebb09688c059b.rlib: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/fast.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/quality.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/seed.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libfoldhash-89aebb09688c059b.rmeta: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/fast.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/quality.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/seed.rs
+
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/lib.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/fast.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/quality.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/foldhash-0.1.5/src/seed.rs:

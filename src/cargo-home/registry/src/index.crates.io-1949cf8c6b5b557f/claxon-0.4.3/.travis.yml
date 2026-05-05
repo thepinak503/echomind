@@ -1,0 +1,50 @@
+language: rust
+
+rust:
+  # Test every third release since the first supported version, so we don't
+  # waste so many resources.
+  - 1.13.0
+  - 1.16.0
+  - 1.19.0
+  - 1.21.0
+  - 1.24.0
+  - 1.27.0
+  - 1.30.0
+  - 1.33.0
+  - beta
+  - nightly
+
+# Opt for a less ancient distribution with a C++11-compliant compiler, in order
+# to compile libfuzzer.
+dist: xenial
+
+addons:
+  apt:
+    packages:
+      - flac
+
+cache:
+  directories:
+    # Cache the fuzzing corpus, so it does not have to discover the entire corpus
+    # again every time, and it can focus on finding bugs instead.
+    - fuzz_corpus
+
+    # Cache the test samples to not put so much load on archive.org, but on
+    # Travis' S3 buckets instead.
+    - testsamples
+
+    # Cargo directories, the default when we could set "cache: cargo". See also
+    # https://github.com/travis-ci/travis-build/pull/710
+    - $HOME/.cargo
+    - $TRAVIS_BUILD_DIR/target
+
+before_script:
+  - cd testsamples && ./populate.sh && cd ..
+
+script:
+  # Do not use the default --verbose commands, they are only noisy.
+  - cargo build
+  - cargo test
+
+  # On the nightly configuration, fuzz for 15 minutes.
+  - FUZZ_SECONDS=900 tools/fuzz_on_ci.sh

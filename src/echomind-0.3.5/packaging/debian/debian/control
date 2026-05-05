@@ -1,0 +1,26 @@
+# Debian Packaging for echomind
+
+Package: echomind
+Version: 0.3.2-1
+Section: utils
+Priority: optional
+Architecture: amd64 arm64
+Maintainer: Pinak Dhabu <pinak@echomind.dev>
+Build-Depends: rustc, cargo, pkg-config, libssl-dev
+Depends: ${shlibs:Depends}, ca-certificates
+Recommends: alsa-utils | espeak
+Homepage: https://github.com/thepinak503/echomind
+Vcs-Browser: https://github.com/thepinak503/echomind
+Vcs-Git: https://github.com/thepinak503/echomind.git
+License: MIT
+Description: A powerful, lightweight AI CLI tool that pipes input to multiple AI chat APIs
+ .
+ Echomind is a command-line interface for AI chat APIs including OpenAI, Claude, 
+ Gemini, Ollama, Grok, Mistral, Cohere, and ChatAnywhere. It features streaming 
+ responses, interactive mode, and advanced options for temperature, tokens, and 
+ model selection. Supports Linux, macOS, and Windows.
+
+Package: echomind
+Architecture: amd64 arm64
+Depends: libc6 (>= 2.34), libssl3 (>= 3.0.2)
+Description: AI CLI tool for multiple chat APIs

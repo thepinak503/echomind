@@ -1,0 +1,22 @@
+[package]
+name = "tuple"
+version = "0.5.2"
+authors = ["Sebastian Köln <s3bk@protonmail.com>"]
+description = "Element-wise operations on tuples"
+documentation = "https://docs.rs/tuple"
+homepage = "https://github.com/s3bk/tuple.git"
+repository = "https://github.com/s3bk/tuple.git"
+keywords = ["tuple", "science"]
+license = "MIT"
+
+[features]
+default = ["impl_num", "impl_serde", "std"]
+impl_num = ["num-traits"]
+impl_simd = ["nightly"]
+impl_serde = ["serde"]
+std = []
+nightly = []
+
+[dependencies]
+num-traits = { version = "0.2", optional=true }
+serde = { version = "1.0", optional=true }

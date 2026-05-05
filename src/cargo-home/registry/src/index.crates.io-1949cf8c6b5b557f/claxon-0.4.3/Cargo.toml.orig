@@ -1,0 +1,22 @@
+[package]
+name = "claxon"
+version = "0.4.3"
+authors = ["Ruud van Asseldonk <dev@veniogames.com>"]
+description = "A FLAC decoding library"
+keywords = ["flac", "lossless", "audio", "codec"]
+categories = ["compression", "multimedia::encoding", "multimedia::audio"]
+license = "Apache-2.0"
+readme = "readme.md"
+homepage = "https://github.com/ruuda/claxon#readme"
+repository = "https://github.com/ruuda/claxon"
+documentation = "https://docs.rs/claxon"
+
+[badges]
+travis-ci = { repository = "ruuda/claxon", branch = "v0.4.3" }
+
+[dev-dependencies]
+hound    = "3.0"
+mp4parse = "0.8"
+ogg      = "0.5.1"
+time     = "0.1"
+walkdir  = "1.0"

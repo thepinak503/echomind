@@ -1,0 +1,37 @@
+{
+  "version": "0.3.2",
+  "description": "A powerful, lightweight AI CLI tool for multiple chat APIs",
+  "homepage": "https://github.com/thepinak503/echomind",
+  "license": "MIT",
+  "repository": "https://github.com/thepinak503/echomind.git",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/thepinak503/echomind/releases/download/v0.3.2/echomind-windows-amd64.zip",
+      "hash": "sha256:<HASH>"
+    }
+  },
+  "installer": {
+    "script": "install.ps1"
+  },
+  "extract_dir": "",
+  "bin": "echomind.exe",
+  "checkver": {
+    "script": "check.ps1"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/thepinak503/echomind/releases/latest",
+        "extract_dir": "",
+        "bin": "echomind.exe"
+      }
+    }
+  },
+  "persist": [
+    "config.toml"
+  ],
+  "notes": [
+    "Configuration files are created in %LOCALAPPDATA%\\echomind\\",
+    "For more information, visit: https://github.com/thepinak503/echomind"
+  ]
+}

@@ -1,0 +1,9 @@
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/unicode_linebreak-869d21cda9b826d4.d: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/shared.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/tables.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libunicode_linebreak-869d21cda9b826d4.rlib: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/shared.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/tables.rs
+
+/home/pinak/git/echomind/src/target/x86_64-unknown-linux-gnu/release/deps/libunicode_linebreak-869d21cda9b826d4.rmeta: /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/lib.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/shared.rs /home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/tables.rs
+
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/lib.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/shared.rs:
+/home/pinak/git/echomind/src/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/unicode-linebreak-0.1.5/src/tables.rs:
