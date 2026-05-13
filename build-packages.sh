@@ -28,7 +28,7 @@ info(){ echo -e "${CYAN}==> $1${NC}"; }
 # ── Clean ──────────────────────────────────────────────────────
 clean() {
   info "Cleaning..."
-  rm -rf "$ROOT/pkg" "$ROOT/build" "$ROOT/src" "$ROOT/*.pkg.tar.*" "$ROOT/*.tar.gz" "$ROOT/*.tar.zst" "$ROOT/*.deb" 2>/dev/null || true
+  rm -rf "$ROOT/pkg" "$ROOT/build" "$ROOT/*.pkg.tar.*" "$ROOT/*.tar.gz" "$ROOT/*.tar.zst" "$ROOT/*.deb" 2>/dev/null || true
   cargo clean 2>/dev/null || true
   ok "Cleaned"
 }
@@ -57,22 +57,19 @@ build_arch() {
   info "Building Arch Linux package..."
   command -v makepkg >/dev/null || fail "makepkg not found (install pacman)"
 
-  local srcdir="$ROOT/src"
-  rm -rf "$srcdir" "$ROOT/pkg" "$ROOT/*.pkg.tar.*" 2>/dev/null || true
-
-  local tarfile="$ROOT/$NAME-$VERSION.tar.gz"
-  [ -f "$tarfile" ] && rm -f "$tarfile"
-
-  mkdir -p "$srcdir/$NAME-$VERSION"
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  cp "$ROOT/PKGBUILD" "$tmpdir/"
+  mkdir -p "$tmpdir/$NAME-$VERSION"
   tar --exclude='.git' --exclude='target' --exclude='pinak.key' \
-      --exclude='src' --exclude='build' --exclude='pkg' \
-      --exclude='*.tar.gz' --exclude='*.tar.zst' --exclude='*.pkg.tar.*' --exclude='*.deb' \
-      -cf - -C "$ROOT" . | tar -xf - -C "$srcdir/$NAME-$VERSION/"
-  cd "$srcdir" && tar -czf "$tarfile" "$NAME-$VERSION/" && cd "$ROOT"
-
-  cp "$tarfile" "$ROOT/"
+      --exclude='build' --exclude='pkg' \
+      --exclude='*.pkg.tar.*' --exclude='*.tar.zst' --exclude='*.deb' \
+      -cf - -C "$ROOT" . | tar -xf - -C "$tmpdir/$NAME-$VERSION/"
+  cd "$tmpdir" && tar -czf "$NAME-$VERSION.tar.gz" "$NAME-$VERSION/"
   makepkg -si --noconfirm 2>&1 | tail -5
-  rm -f "$ROOT/$NAME-$VERSION.tar.gz"
+  cp "$tmpdir"/*.pkg.tar.zst "$ROOT/" 2>/dev/null || true
+  cd "$ROOT"
+  rm -rf "$tmpdir"
 
   local pkgfile="$ROOT/$NAME-$VERSION-1-$PKG_ARCH.pkg.tar.zst"
   [ -f "$pkgfile" ] || fail "Arch package not created"
