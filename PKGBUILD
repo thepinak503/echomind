@@ -75,7 +75,7 @@ check() {
     _target="$CARCH-unknown-linux-gnu"
   fi
 
-  cargo test --release --all-features --target "$_target"
+  cargo test --release --all-features --target "$_target" --lib
 }
 
 package() {
