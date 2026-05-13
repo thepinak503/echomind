@@ -357,9 +357,8 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
         })?;
 
         if event::poll(Duration::from_millis(50))? {
-            match event::read()? {
-                Event::Key(key) => {
-                    if key.modifiers.contains(KeyModifiers::CONTROL) {
+            if let Event::Key(key) = event::read()? {
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
                         match key.code {
                             KeyCode::Char('c') | KeyCode::Char('q') => break,
                             KeyCode::Char('t') => {
@@ -509,9 +508,7 @@ pub async fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: TuiApp) ->
                         }
                     }
                 }
-                _ => {}
             }
-        }
 
         if let Ok(chunk) = rx.try_recv() {
             if chunk.is_empty() {
