@@ -1,6 +1,7 @@
 # Build artifacts
 target/
 pkg/
+build/
 
 # Cargo cache
 src/cargo-home/
