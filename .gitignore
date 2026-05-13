@@ -1,0 +1,26 @@
+# Build artifacts
+target/
+pkg/
+
+# Cargo cache
+src/cargo-home/
+
+# Personal keys
+pinak.key
+
+# Archives
+*.tar.gz
+*.tar.zst
+*.pkg.tar.*
+*.deb
+
+# Prebuilt binaries
+echomind-linux-x86_64
+echomind-linux-x86_64.gz
+
+# Old extracted source
+echomind-0.3.5/
+
+# Logs and signatures
+*.log
+*.sig

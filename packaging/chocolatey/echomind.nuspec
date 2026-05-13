@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/2003/07/Package" xmlns:metainf="http://schemas.microsoft.com/2004/02/metainf" xmlns:install="http://schemas.microsoft.com/2004/02/Configuration/Install">
+  <metadata>
+    <id>echomind</id>
+    <title>echomind</title>
+    <version>0.3.2</version>
+    <authors>Pinak Dhabu</authors>
+    <owners>Pinak Dhabu</owners>
+    <license>MIT</license>
+    <projectUrl>https://github.com/thepinak503/echomind</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/thepinak503/echomind/master/assets/icon.png</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <tags>ai cli chatbot rust gpt claude gemini</tags>
+    <summary>A powerful, lightweight AI CLI tool for multiple chat APIs</summary>
+    <description>Echomind is a command-line interface for AI chat APIs including OpenAI, Claude, Gemini, Ollama, Grok, Mistral, Cohere, and ChatAnywhere. It features streaming responses, interactive mode, and advanced options.</description>
+    <releaseNotes>Initial Chocolatey package release with all features supported</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\chocolateyInstall.ps1" />
+    <file src="tools\chocolateyUninstall.ps1" />
+  </files>
+  <install>
+    <installers>
+      <installer type="ps1" file="tools\chocolateyInstall.ps1" />
+    </installers>
+  </install>
+</package>

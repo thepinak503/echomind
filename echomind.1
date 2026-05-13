@@ -1,0 +1,517 @@
+.TH ECHOMIND 1 "2025-01-16" "0.3.2" "User Commands"
+.SH NAME
+echomind \- Powerful cross-platform AI-powered CLI tool with extensive features
+.SH SYNOPSIS
+.B echomind
+.RI [ OPTIONS ]
+.RI [ PROMPT ]
+.br
+.B echomind
+.B \-\-interactive
+.RI [ OPTIONS ]
+.br
+.B echomind
+.B \-\-tui
+.br
+.B echomind
+.B \-\-init\-config
+.br
+.B echomind
+.B \-\-clipboard
+.RI [ OPTIONS ]
+.SH DESCRIPTION
+.B echomind
+is a powerful, cross-platform command-line tool written in Rust that pipes input to AI chat APIs and outputs responses. It features extensive support for multiple AI providers, streaming responses, interactive TUI mode, clipboard integration, conversation history, model comparison, and more.
+
+When invoked without arguments or input, echomind displays usage information. To process input, pipe text to echomind from stdin, use --clipboard to read from clipboard, or provide input directly.
+.SH OPTIONS
+.SS "Core Options"
+.TP
+.BR \-h ", " \-\-help
+Display help information and exit.
+.TP
+.BR \-V ", " \-\-version
+Display version information and exit.
+.TP
+.BR \-v ", " \-\-verbose
+Enable verbose output for debugging and performance metrics.
+.TP
+.BR \-\-init\-config
+Initialize default configuration file at ~/.config/echomind/config.toml.
+.TP
+.BR \-\-show\-config
+Display configuration file location and contents.
+.TP
+.BR \-\-list\-providers
+List all available AI providers and their status.
+.SS "Mode Options"
+.TP
+.BR \-i ", " \-\-interactive
+Start interactive REPL mode for multi-turn conversations.
+.TP
+.BR \-\-tui
+Start Text User Interface (TUI) mode with rich terminal UI.
+.TP
+.BR \-c ", " \-\-coder
+Enable coder mode. Generates clean, runnable code without explanations or markdown fences.
+.TP
+.BR \-\-stream
+Stream response as it arrives in real-time (like ChatGPT typing effect).
+.TP
+.BR \-\-benchmark
+Benchmark model performance with timing and metrics.
+.TP
+.BR \-\-benchmark\-compare " " \fIMODELS\fR
+Compare performance across multiple models (space-separated).
+.SS "Input/Output Options"
+.TP
+.BR \-o ", " \-\-output " " \fIFILE\fR
+Save response to FILE instead of printing to stdout.
+.TP
+.BR \-\-co " " \fIFILE\fR
+Combined shorthand for \-\-coder \-\-output FILE.
+.TP
+.BR \-\-clipboard
+Read input from system clipboard instead of stdin.
+.TP
+.BR \-\-to\-clipboard
+Save response to system clipboard.
+.TP
+.BR \-p ", " \-\-provider " " \fINAME\fR
+API provider to use. Options: chat, chatanywhere, openai, claude, ollama, grok, mistral, cohere, or custom URL. Default: chat.
+.TP
+.BR \-m ", " \-\-model " " \fIMODEL\fR
+Model to use (e.g., gpt-4, claude-3-opus, llama2, gemini-pro). Default: gpt-3.5-turbo.
+.TP
+.BR \-\-api\-key " " \fIKEY\fR
+API key for providers that require authentication. Can also be set via ECHOMIND_API_KEY environment variable.
+.TP
+.BR \-\-timeout " " \fISECONDS\fR
+Request timeout in seconds. Default: 30.
+.SS "AI Parameters"
+.TP
+.BR \-t ", " \-\-temperature " " \fINUM\fR
+Control response randomness (0.0-2.0). Lower values are more deterministic, higher values more creative. Default: 0.7.
+.TP
+.BR \-\-max\-tokens " " \fINUM\fR
+Maximum tokens in response. Limits response length.
+.TP
+.BR \-\-top\-p " " \fINUM\fR
+Top-p sampling parameter (0.0-1.0). Controls nucleus sampling.
+.TP
+.BR \-\-top\-k " " \fINUM\fR
+Top-k sampling parameter. Controls vocabulary filtering.
+.TP
+.BR \-s ", " \-\-system " " \fIPROMPT\fR
+Custom system prompt to control AI behavior.
+.TP
+.BR \-\-format " " \fIFORMAT\fR
+Output format: text, json, or template:<template>.
+.SS "Conversation Options"
+.TP
+.BR \-\-history " " \fIFILE\fR
+Conversation history file for persistent context across sessions.
+.TP
+.BR \-\-preset " " \fINAME\fR
+Use a predefined conversation preset from config file.
+.TP
+.BR \-\-compare " " \fIMODELS\fR
+Compare responses from multiple models (comma-separated).
+.SS "Batch Processing"
+.TP
+.BR \-\-batch " " \fIFILE\fR
+Process multiple queries from file, one per line.
+.SS "History Management"
+.TP
+.BR \-\-search\-history " " \fIQUERY\fR
+Search through conversation history.
+.TP
+.BR \-\-export\-history " " \fIFORMAT\fR
+Export history to format (json, csv, markdown).
+.TP
+.BR \-\-history\-stats
+Show conversation history statistics.
+.TP
+.BR \-\-merge\-history " " \fIFILES\fR
+Merge multiple history files (space-separated).
+.SS "Workflow Features"
+.TP
+.BR \-\-workflow " " \fIFILE\fR
+Execute workflow from JSON file.
+.TP
+.BR \-\-list\-workflows
+List available workflows.
+.SS "Collaboration"
+.TP
+.BR \-\-share
+Share current conversation (generates shareable link).
+.TP
+.BR \-\-collaborate
+Start collaboration session.
+.SS "Security & Quality"
+.TP
+.BR \-\-encrypt
+Encrypt conversation data.
+.TP
+.BR \-\-local\-only
+Local-only mode (no network access).
+.TP
+.BR \-\-audit\-log
+Enable audit logging.
+.TP
+.BR \-\-quality\-score
+Enable response quality scoring.
+.TP
+.BR \-\-fact\-check
+Enable fact-checking of responses.
+.TP
+.BR \-\-bias\-detect
+Enable bias detection in responses.
+.SS "Content Management"
+.TP
+.BR \-\-template " " \fINAME\fR
+Use predefined template.
+.TP
+.BR \-\-snippet " " \fINAME\fR
+Use predefined code snippet.
+.TP
+.BR \-\-list\-snippets
+List available snippets.
+.SS "Data Processing"
+.TP
+.BR \-\-csv " " \fIFILE\fR
+Process CSV file and include in context.
+.TP
+.BR \-\-json\-file " " \fIFILE\fR
+Process JSON file and include in context.
+.TP
+.BR \-\-excel " " \fIFILE\fR
+Process Excel file and include in context.
+.SS "Scheduling"
+.TP
+.BR \-\-schedule " " \fITIME\fR
+Schedule task for later execution (cron format or relative time).
+.SS "Developer Options"
+.TP
+.BR \-\-debug
+Enable debug mode with detailed logging.
+.TP
+.BR \-\-test\-mode
+Enable test mode with mock responses.
+.SH CONFIGURATION
+.B echomind
+can be configured via ~/.config/echomind/config.toml. Use
+.B echomind --init-config
+to create a default configuration file.
+
+Configuration options include:
+.IP \(bu 2
+Default API provider and endpoint
+.IP \(bu 2
+API keys
+.IP \(bu 2
+Default model selection
+.IP \(bu 2
+AI parameters (temperature, max_tokens, top_p, top_k)
+.IP \(bu 2
+Default modes (coder, stream)
+.IP \(bu 2
+Request timeout
+.IP \(bu 2
+Conversation presets
+
+Command-line options override configuration file settings.
+.SH ENVIRONMENT
+.TP
+.B ECHOMIND_API_KEY
+API key for authentication. Overrides config file setting.
+.SH SUPPORTED PROVIDERS
+.TP
+.B chat
+Free API at https://ch.at (no API key required, GPT-3.5-turbo compatible)
+.TP
+.B chatanywhere
+ChatAnywhere API at https://api.chatanywhere.tech (requires API key, GPT models)
+.TP
+.B openai
+OpenAI API (requires API key, GPT-3.5/4, vision models)
+.TP
+.B claude
+Anthropic Claude API (requires API key, Claude 3 models)
+.TP
+.B gemini
+Google Gemini API (requires API key, Gemini 1.5 Pro, multimodal)
+.TP
+.B ollama
+Local Ollama instance at http://localhost:11434 (no API key, local models)
+.TP
+.B grok
+xAI Grok API (requires API key, Grok models)
+.TP
+.B mistral
+Mistral AI API (requires API key, Mistral models)
+.TP
+.B cohere
+Cohere API (requires API key, Command models)
+.TP
+.B custom
+Custom API endpoint (specify full URL)
+.SH EXAMPLES
+.SS "Basic Usage"
+.TP
+Simple question:
+.RS
+echo "Hello, how are you?" | echomind
+.RE
+.TP
+Process file contents:
+.RS
+cat README.md | echomind "Summarize this document"
+.RE
+.TP
+Process command output:
+.RS
+git diff | echomind "Review these code changes"
+.RE
+.TP
+Read from clipboard:
+.RS
+echomind --clipboard "Explain this text"
+.RE
+.SS "Coder Mode"
+.TP
+Generate code and save to file:
+.RS
+echo "write a Python factorial function" | echomind --coder --output factorial.py
+.RE
+.TP
+Using shorthand:
+.RS
+echo "create REST API with FastAPI" | echomind -co api.py
+.RE
+.SS "Interactive Modes"
+.TP
+Start interactive REPL:
+.RS
+echomind --interactive
+.RE
+.TP
+Start TUI mode:
+.RS
+echomind --tui
+.RE
+.TP
+Interactive with streaming:
+.RS
+echomind -i --stream --history session.json
+.RE
+.SS "Multiple Providers"
+.TP
+Use OpenAI with GPT-4:
+.RS
+echo "Explain quantum computing" | echomind --provider openai --model gpt-4
+.RE
+.TP
+Use Claude:
+.RS
+echo "Write a creative story" | echomind --provider claude --model claude-3-opus
+.RE
+.TP
+Use Gemini:
+.RS
+echo "Analyze this" | echomind --provider gemini --model gemini-1.5-pro
+.RE
+.TP
+Use local Ollama:
+.RS
+echo "Help me debug this code" | echomind --provider ollama --model llama2
+.RE
+.SS "Advanced Parameters"
+.TP
+Control creativity:
+.RS
+echo "Write a poem" | echomind --temperature 1.8
+.RE
+.TP
+Precise answers:
+.RS
+echo "Calculate 15 * 23" | echomind --temperature 0.1
+.RE
+.TP
+Limit response length:
+.RS
+echo "Explain machine learning" | echomind --max-tokens 100
+.RE
+.TP
+Custom system prompt:
+.RS
+echo "Hello" | echomind --system "You are a helpful coding assistant"
+.RE
+.SS "Output Formatting"
+.TP
+JSON output:
+.RS
+echo "List 5 fruits" | echomind --format json
+.RE
+.TP
+Custom template:
+.RS
+echomind --format "template:Answer: {content}" "What is 2+2?"
+.RE
+.SS "Conversation Management"
+.TP
+Persistent history:
+.RS
+echomind -i --history coding-session.json
+.RE
+.TP
+Use preset:
+.RS
+echomind --preset code-review "$(cat main.rs)"
+.RE
+.TP
+Compare models:
+.RS
+echo "Pros and cons of microservices" | echomind --compare "gpt-4,claude-3-opus"
+.RE
+.SS "Clipboard Workflow"
+.TP
+Read and write to clipboard:
+.RS
+echomind --clipboard --to-clipboard "Translate to French"
+.RE
+.SS "Batch Processing"
+.TP
+Process multiple queries:
+.RS
+echo -e "What is AI?\nExplain Rust\nWrite hello world" > queries.txt
+echomind --batch queries.txt
+.RE
+.SS "Performance & Benchmarking"
+.TP
+Benchmark model:
+.RS
+echo "Explain recursion" | echomind --benchmark --provider openai --model gpt-4
+.RE
+.TP
+Compare performance:
+.RS
+echomind --benchmark-compare "gpt-3.5-turbo,gpt-4" "Complex algorithm explanation"
+.RE
+.SS "Workflow Automation"
+.TP
+Execute workflow:
+.RS
+echomind --workflow code-review-workflow.json
+.RE
+.TP
+List workflows:
+.RS
+echomind --list-workflows
+.RE
+.SS "Data Processing"
+.TP
+Process CSV:
+.RS
+echomind --csv data.csv "Analyze this dataset"
+.RE
+.TP
+Process Excel:
+.RS
+echomind --excel report.xlsx "Summarize this spreadsheet"
+.RE
+.SS "History Management"
+.TP
+Search history:
+.RS
+echomind --search-history "python"
+.RE
+.TP
+Export history:
+.RS
+echomind --export-history json
+.RE
+.TP
+Show stats:
+.RS
+echomind --history-stats
+.RE
+.SH INTERACTIVE MODE
+In interactive mode, the following commands are available:
+.TP
+.B exit, quit, Ctrl+D, Ctrl+C
+Exit interactive mode
+.TP
+.B clear
+Clear conversation history
+.TP
+.B /help
+Show available commands
+.TP
+.B /model <name>
+Change AI model
+.TP
+.B /temp <value>
+Change temperature
+.TP
+.B /stream
+Toggle streaming mode
+.TP
+Simply type your message and press Enter to chat with the AI. Conversation context is maintained across turns.
+.SH TUI MODE
+The TUI (Text User Interface) mode provides a rich terminal experience with:
+.IP \(bu 2
+Real-time message streaming
+.IP \(bu 2
+Conversation history with timestamps
+.IP \(bu 2
+Keyboard shortcuts (Ctrl+T for temperature, Ctrl+S for stream, Ctrl+L to clear)
+.IP \(bu 2
+Up/Down arrows for command history
+.IP \(bu 2
+Color-coded messages by role
+.SH FILES
+.TP
+.I ~/.config/echomind/config.toml
+User configuration file
+.TP
+.I ~/.config/echomind/chat_history.enc
+Encrypted chat history
+.TP
+.I ~/.config/echomind/presets.toml
+Conversation presets
+.SH EXIT STATUS
+.TP
+.B 0
+Success
+.TP
+.B 1
+Error occurred (network, API, configuration, etc.)
+.SH TROUBLESHOOTING
+.TP
+.B "API key required" errors
+Set API key via \-\-api-key option, ECHOMIND_API_KEY environment variable, or config file.
+.TP
+.B Timeout errors
+Increase timeout with \-\-timeout option or in config file.
+.TP
+.B Network errors
+Check internet connectivity, firewall settings, and API endpoint status. Use \-\-verbose for debugging.
+.TP
+.B Provider not working
+Use \-\-list-providers to check provider status. Some providers may require VPN or specific regions.
+.SH AUTHOR
+Written by Pinak Dhabu <thepinak503@duck.com>.
+.SH REPORTING BUGS
+Report bugs at: https://github.com/thepinak503/echomind/issues
+.SH COPYRIGHT
+Copyright \(co 2025 Pinak Dhabu. License: MIT.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH SEE ALSO
+Full documentation at: https://github.com/thepinak503/echomind
+.br
+Project page: https://github.com/thepinak503/echomind
+.br
+AUR Package: https://aur.archlinux.org/packages/echomind
