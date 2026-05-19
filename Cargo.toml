@@ -45,7 +45,7 @@ syntect = "5.2"
 termcolor = "1.4"
 
 # Web & integrations
-uuid = { version = "1.6", features = ["v4", "serde"] }
+uuid = { version = "1.23", features = ["v4", "serde"] }
 url = "2.5"
 
 # Performance monitoring
