@@ -61,7 +61,7 @@ jobs:
             name: macOS ARM64
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
@@ -130,7 +130,7 @@ jobs:
           "$hash  ${{ matrix.asset }}.zip" | Out-File -FilePath ${{ matrix.asset }}.zip.sha256
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.asset }}
           path: |
@@ -140,7 +140,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ${{ matrix.asset }}.tar.gz
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
       - name: Install cargo-cyclonedx
@@ -164,7 +164,7 @@ jobs:
       - name: Generate SBOM
         run: cargo cyclonedx --all --format json --output-pattern package
       - name: Upload SBOM
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: '*.json'
         env:
@@ -175,7 +175,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Generate release notes
         run: |
           cat > release_notes.md << 'EOF'
@@ -222,7 +222,7 @@ jobs:
           EOF
 
       - name: Update release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: release_notes.md
         env:
